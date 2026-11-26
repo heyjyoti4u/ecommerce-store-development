@@ -1,0 +1,4 @@
+import Link from 'next/link'
+import StoreHeader from '@/components/store-header'
+export const metadata = { title: 'Our story — ORO', description: 'The ORO point of view: fewer, better pieces for the days that make up a life.' }
+export default function AboutPage() { return <><StoreHeader /><main className="editorial-page"><span className="section-kicker">A wardrobe, thoughtfully edited</span><h1>Wear it your way.<br />Then wear it again.</h1><p>ORO is for the everyday moments that turn into the stories you keep. We make considered clothes and little extras that fit real life: easy layers, lived-in shapes, and details you notice over time.</p><p>We believe the best pieces are the ones you reach for without thinking. Made to move with you, made to be worn on repeat.</p><Link className="button-dark" href="/products">Find your everyday</Link></main></> }
