@@ -17,7 +17,12 @@ create policy "Admins can read own admin record"
   on public.admin_users for select to authenticated
   using (user_id = (select auth.uid()));
 
--- Admins can read all orders and customer profiles, and update order status.
+-- Admins can manage the product catalogue, read all orders and customer profiles, and update order status.
+drop policy if exists "Admins can manage products" on public.products;
+create policy "Admins can manage products" on public.products for all to authenticated
+  using (exists (select 1 from public.admin_users a where a.user_id = (select auth.uid())))
+  with check (exists (select 1 from public.admin_users a where a.user_id = (select auth.uid())));
+grant select, insert, update, delete on public.products to authenticated;
 drop policy if exists "Admins can read all customer profiles" on public.customer_profiles;
 create policy "Admins can read all customer profiles"
   on public.customer_profiles for select to authenticated
