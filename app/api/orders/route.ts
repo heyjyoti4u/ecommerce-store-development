@@ -58,8 +58,8 @@ export async function POST(request: Request) {
     data = result.data
     error = result.error
   }
-  if (error) {
-    console.error('[orders] Supabase order creation failed:', error.message)
+  if (error || !data) {
+    console.error('[orders] Supabase order creation failed:', error?.message ?? 'No order returned')
     return NextResponse.json({ error: 'We could not save your order. Please try again in a moment.' }, { status: 503 })
   }
   return NextResponse.json({ orderNumber: data.order_number, total: Number(data.total), currency: 'INR' }, { status: 201 })
