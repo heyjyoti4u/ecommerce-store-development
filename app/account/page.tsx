@@ -26,6 +26,7 @@ export default function AccountPage() {
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
@@ -166,7 +167,7 @@ export default function AccountPage() {
       const supabase = getSupabaseBrowserClient()
       const { data, error: saveError } = await supabase.from('customer_profiles').upsert({ user_id: user.id, email: user.email.toLowerCase(), ...form, updated_at: new Date().toISOString() }, { onConflict: 'user_id' }).select('*').single()
       if (saveError) throw saveError
-      setProfile(data as Profile); setMessage('Profile saved successfully.')
+      setProfile(data as Profile); setIsEditingProfile(false); setMessage('Profile saved successfully.')
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not save profile.') }
     finally { setSaving(false) }
   }
@@ -225,9 +226,15 @@ export default function AccountPage() {
         <label className="account-upload"><span>{saving ? 'Uploading…' : 'Change profile photo'}</span><input type="file" accept="image/png,image/jpeg,image/webp" disabled={saving} onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadAvatar(file); e.currentTarget.value = '' }} /></label>
         <p className="account-photo-hint">JPG, PNG or WEBP · maximum 3 MB</p>
         <form className="account-form account-details-form" onSubmit={saveProfile}>
-          <h2>Personal & delivery details</h2>
-          {([['full_name','Full name','name'],['phone','Mobile number','tel'],['address','Street address','street-address'],['city','City','address-level2'],['state','State','address-level1'],['postal_code','PIN code','postal-code']] as const).map(([key,label,autocomplete]) => <label className="form-field" key={key}>{label}<input required autoComplete={autocomplete} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} /></label>)}
-          <button className="button-dark full-width" disabled={saving}>{saving ? 'Saving…' : 'Save details'}</button>
+          <div className="account-details-heading">
+            <h2>Personal & delivery details</h2>
+            {!isEditingProfile && <button className="button-dark" type="button" onClick={() => { setForm({ full_name: profile?.full_name ?? '', phone: profile?.phone ?? '', address: profile?.address ?? '', city: profile?.city ?? '', state: profile?.state ?? '', postal_code: profile?.postal_code ?? '' }); setIsEditingProfile(true); setMessage(''); setError('') }}>Edit profile</button>}
+          </div>
+          {([['full_name','Full name','name'],['phone','Mobile number','tel'],['address','Street address','street-address'],['city','City','address-level2'],['state','State','address-level1'],['postal_code','PIN code','postal-code']] as const).map(([key,label,autocomplete]) => <label className="form-field" key={key}>{label}<input required disabled={!isEditingProfile || saving} autoComplete={autocomplete} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} /></label>)}
+          {isEditingProfile && <div className="account-edit-actions">
+            <button className="button-dark full-width" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button>
+            <button className="verification-back" type="button" disabled={saving} onClick={() => { setForm({ full_name: profile?.full_name ?? '', phone: profile?.phone ?? '', address: profile?.address ?? '', city: profile?.city ?? '', state: profile?.state ?? '', postal_code: profile?.postal_code ?? '' }); setIsEditingProfile(false); setError(''); setMessage('') }}>Cancel</button>
+          </div>}
         </form>
         {isAdmin && <Link className="account-signout" href="/admin/products">Open admin panel →</Link>}
         <button className="account-signout" type="button" onClick={() => void signOut()}><LogOut size={15} /> Sign out</button>
