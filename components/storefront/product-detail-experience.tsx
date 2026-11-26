@@ -38,15 +38,19 @@ export default function ProductDetailExperience({ product }: { product: Product 
       </div>}
     </div>
     <section className="product-detail-copy"><span className="section-kicker">{product.category} · ORO everyday</span><h1>{product.name}</h1><p className="detail-price">{formatPrice(product.price)}{product.oldPrice && <s>{formatPrice(product.oldPrice)}</s>}</p><p className="detail-description">{product.description}</p><p className="detail-note">Thoughtfully made, easy to wear, and ready to make a regular appearance.</p><div className="product-options">
-      <span className="option-label">Colour · {color}</span>
-      <div className="option-row" role="group" aria-label="Choose a colour">
-        {product.colors.map((value) => <button key={value} type="button" className={`color-dot detail-color-swatch ${color === value ? 'is-selected' : ''}`} style={{ backgroundColor: swatches[value.toLowerCase()] ?? '#d8c9ad' }} aria-label={value} aria-pressed={color === value} onClick={() => selectColor(value)} />)}
-      </div>
-      <span className="option-label option-label-spaced">Size · {size}</span>
-      <div className="option-row" role="group" aria-label="Choose a size">
-        {product.sizes.map((value) => <button key={value} className={`option-button ${size === value ? 'selected' : ''}`} type="button" aria-pressed={size === value} onClick={() => setSize(value)}>{value}</button>)}
-      </div>
-      <button className="button-dark full-width detail-add" type="button" onClick={() => { add(product, size, color); setAdded(true); window.setTimeout(() => setAdded(false), 1800) }}><ShoppingBag size={15} /> {added ? 'Added to your bag' : 'Add to bag'}</button>
+      {product.colors.length > 0 && <>
+        <span className="option-label">Colour · {color || 'Choose a colour'}</span>
+        <div className="option-row" role="group" aria-label="Choose a colour">
+          {product.colors.map((value) => <button key={value} type="button" className={`color-dot detail-color-swatch ${color === value ? 'is-selected' : ''}`} style={{ backgroundColor: swatches[value.toLowerCase()] ?? '#d8c9ad' }} aria-label={value} title={value} aria-pressed={color === value} onClick={() => selectColor(value)} />)}
+        </div>
+      </>}
+      {product.sizes.length > 0 && <>
+        <span className="option-label option-label-spaced">Size · {size || 'Choose a size'}</span>
+        <div className="option-row" role="group" aria-label="Choose a size">
+          {product.sizes.map((value) => <button key={value} className={`option-button ${size === value ? 'selected' : ''}`} type="button" aria-pressed={size === value} onClick={() => setSize(value)}>{value}</button>)}
+        </div>
+      </>}
+      <button className="button-dark full-width detail-add" type="button" disabled={(product.colors.length > 0 && !color) || (product.sizes.length > 0 && !size)} onClick={() => { add(product, size, color); setAdded(true); window.setTimeout(() => setAdded(false), 1800) }}><ShoppingBag size={15} /> {added ? 'Added to your bag' : 'Add to bag'}</button>
       <p className="detail-note">Free shipping on orders over ₹3,000 · Cash on delivery available</p>
     </div><Link className="text-link" href="/shipping">Shipping & returns <span aria-hidden="true">↗</span></Link></section>
   </div>
