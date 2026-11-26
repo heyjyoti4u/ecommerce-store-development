@@ -12,6 +12,12 @@ type ProductRow = {
   category: string
   price: number
   old_price: number | null
+  image: string
+  alt: string
+  description: string
+  sizes: string[]
+  colors: string[]
+  badge: string | null
   active: boolean
 }
 
@@ -41,7 +47,7 @@ export default function AdminProductsPage() {
     }
     const { data, error: productsError } = await supabase
       .from('products')
-      .select('id,name,category,price,old_price,active')
+      .select('id,name,category,price,old_price,image,alt,description,sizes,colors,badge,active')
       .order('category', { ascending: true })
       .order('name', { ascending: true })
     if (productsError) throw productsError
@@ -63,7 +69,17 @@ export default function AdminProductsPage() {
     try {
       const { error: saveError } = await getSupabaseBrowserClient()
         .from('products')
-        .update({ price: Number(product.price), old_price: product.old_price === null ? null : Number(product.old_price), active: product.active })
+        .update({
+          price: Number(product.price),
+          old_price: product.old_price === null ? null : Number(product.old_price),
+          image: product.image.trim(),
+          alt: product.alt.trim(),
+          description: product.description.trim(),
+          sizes: product.sizes,
+          colors: product.colors,
+          badge: product.badge?.trim() || null,
+          active: product.active,
+        })
         .eq('id', product.id)
       if (saveError) throw saveError
       setNotice(product.name + ' saved.')
@@ -88,7 +104,7 @@ export default function AdminProductsPage() {
     <div className="store-page-heading">
       <span className="section-kicker"><ShieldCheck size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> ORO private admin</span>
       <h1 className="section-title">Product catalogue.</h1>
-      <p className="section-intro">Signed in as {email || 'admin'} · Manage product prices and storefront visibility.</p>
+      <p className="section-intro">Signed in as {email || 'admin'} · Manage product content, images, options, pricing and storefront visibility.</p>
     </div>
     <nav aria-label="Admin navigation" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', margin: '24px 0' }}>
       <Link className="button-dark" href="/admin/products">Products</Link>
@@ -106,14 +122,40 @@ export default function AdminProductsPage() {
           <div><strong>{product.name}</strong><span>{product.category} · {product.id}</span></div>
           <strong>{formatPrice(Number(product.price))}</strong>
         </div>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'end', flexWrap: 'wrap', paddingTop: 14 }}>
-          <label className="form-field" style={{ minWidth: 130 }}>Selling price (₹)
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14, paddingTop: 14 }}>
+          <label className="form-field">Product name
+            <input value={product.name} onChange={(event) => changeProduct(product.id, { name: event.target.value })} />
+          </label>
+          <label className="form-field">Category
+            <select value={product.category} onChange={(event) => changeProduct(product.id, { category: event.target.value })}>
+              <option value="Clothing">Clothing</option><option value="Bags">Bags</option><option value="Accessories">Accessories</option>
+            </select>
+          </label>
+          <label className="form-field">Main image URL or path
+            <input value={product.image} onChange={(event) => changeProduct(product.id, { image: event.target.value })} />
+          </label>
+          <label className="form-field">Image alt text
+            <input value={product.alt} onChange={(event) => changeProduct(product.id, { alt: event.target.value })} />
+          </label>
+          <label className="form-field">Sizes · comma separated
+            <input value={product.sizes.join(', ')} onChange={(event) => changeProduct(product.id, { sizes: event.target.value.split(',').map((value) => value.trim()).filter(Boolean) })} />
+          </label>
+          <label className="form-field">Colours · comma separated
+            <input value={product.colors.join(', ')} onChange={(event) => changeProduct(product.id, { colors: event.target.value.split(',').map((value) => value.trim()).filter(Boolean) })} />
+          </label>
+          <label className="form-field">Product badge
+            <input value={product.badge ?? ''} onChange={(event) => changeProduct(product.id, { badge: event.target.value })} />
+          </label>
+          <label className="form-field" style={{ gridColumn: '1 / -1' }}>Description
+            <textarea rows={3} value={product.description} onChange={(event) => changeProduct(product.id, { description: event.target.value })} />
+          </label>
+          <label className="form-field">Selling price (₹)
             <input type="number" min="0" step="1" value={product.price} onChange={(event) => changeProduct(product.id, { price: Number(event.target.value) })} />
           </label>
-          <label className="form-field" style={{ minWidth: 130 }}>Compare-at price (₹)
+          <label className="form-field">Compare-at price (₹)
             <input type="number" min="0" step="1" value={product.old_price ?? ''} onChange={(event) => changeProduct(product.id, { old_price: event.target.value === '' ? null : Number(event.target.value) })} />
           </label>
-          <label style={{ display: 'flex', gap: 8, alignItems: 'center', paddingBottom: 12 }}>
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <input type="checkbox" checked={product.active} onChange={(event) => changeProduct(product.id, { active: event.target.checked })} />
             Visible on storefront
           </label>
