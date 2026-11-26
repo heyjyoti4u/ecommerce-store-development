@@ -97,8 +97,89 @@ declare
   v_product public.products%rowtype;
 begin
   if v_user_id is null then raise exception 'Authentication required'; end if;
-  select id into v_customer_id from public.customer_profiles where user_id = v_user_id;
-  if v_customer_id is null then raise exception 'Complete your customer profile before ordering'; end if;
+  select id into v_customer_id from public.customer_profiles
+  where user_id = v_user_id
+    and length(trim(full_name)) >= 2
+    and phone ~ '^[6-9][0-9]{9}
+  if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) < 1 or jsonb_array_length(p_items) > 30 then raise exception 'Invalid order items'; end if;
+
+  for v_line in
+    select x.product_id, x.size, x.color, sum(x.quantity)::integer as quantity
+    from jsonb_to_recordset(p_items) as x(product_id text, size text, color text, quantity integer)
+    group by x.product_id, x.size, x.color
+  loop
+    if v_line.quantity < 1 or v_line.quantity > 10 then raise exception 'Quantity limit exceeded'; end if;
+    select * into v_product from public.products where id = v_line.product_id and active = true;
+    if not found then raise exception 'Product unavailable'; end if;
+    if not (v_product.sizes ? v_line.size) or not (v_product.colors ? v_line.color) then raise exception 'Invalid product option'; end if;
+    v_subtotal := v_subtotal + (v_product.price * v_line.quantity);
+  end loop;
+
+  v_shipping := case when v_subtotal = 0 or v_subtotal >= 3000 then 0 else 150 end;
+  insert into public.orders(customer_id, subtotal, shipping, total, payment_method)
+  values (v_customer_id, v_subtotal, v_shipping, v_subtotal + v_shipping, 'cod')
+  returning id, order_number into v_order_id, v_order_number;
+
+  for v_line in
+    select x.product_id, x.size, x.color, sum(x.quantity)::integer as quantity
+    from jsonb_to_recordset(p_items) as x(product_id text, size text, color text, quantity integer)
+    group by x.product_id, x.size, x.color
+  loop
+    select * into v_product from public.products where id = v_line.product_id and active = true;
+    insert into public.order_items(order_id, product_id, product_name, unit_price, size, color, quantity, line_total)
+    values (v_order_id, v_product.id, v_product.name, v_product.price, v_line.size, v_line.color, v_line.quantity, v_product.price * v_line.quantity);
+  end loop;
+
+  return jsonb_build_object('order_number', v_order_number, 'total', v_subtotal + v_shipping, 'currency', 'INR');
+end;
+$$;
+revoke all on function public.create_account_order(jsonb) from public, anon;
+grant execute on function public.create_account_order(jsonb) to authenticated;
+
+commit;
+
+    and length(trim(address)) >= 5
+    and length(trim(city)) >= 2
+    and length(trim(state)) >= 2
+    and postal_code ~ '^[0-9]{6}
+  if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) < 1 or jsonb_array_length(p_items) > 30 then raise exception 'Invalid order items'; end if;
+
+  for v_line in
+    select x.product_id, x.size, x.color, sum(x.quantity)::integer as quantity
+    from jsonb_to_recordset(p_items) as x(product_id text, size text, color text, quantity integer)
+    group by x.product_id, x.size, x.color
+  loop
+    if v_line.quantity < 1 or v_line.quantity > 10 then raise exception 'Quantity limit exceeded'; end if;
+    select * into v_product from public.products where id = v_line.product_id and active = true;
+    if not found then raise exception 'Product unavailable'; end if;
+    if not (v_product.sizes ? v_line.size) or not (v_product.colors ? v_line.color) then raise exception 'Invalid product option'; end if;
+    v_subtotal := v_subtotal + (v_product.price * v_line.quantity);
+  end loop;
+
+  v_shipping := case when v_subtotal = 0 or v_subtotal >= 3000 then 0 else 150 end;
+  insert into public.orders(customer_id, subtotal, shipping, total, payment_method)
+  values (v_customer_id, v_subtotal, v_shipping, v_subtotal + v_shipping, 'cod')
+  returning id, order_number into v_order_id, v_order_number;
+
+  for v_line in
+    select x.product_id, x.size, x.color, sum(x.quantity)::integer as quantity
+    from jsonb_to_recordset(p_items) as x(product_id text, size text, color text, quantity integer)
+    group by x.product_id, x.size, x.color
+  loop
+    select * into v_product from public.products where id = v_line.product_id and active = true;
+    insert into public.order_items(order_id, product_id, product_name, unit_price, size, color, quantity, line_total)
+    values (v_order_id, v_product.id, v_product.name, v_product.price, v_line.size, v_line.color, v_line.quantity, v_product.price * v_line.quantity);
+  end loop;
+
+  return jsonb_build_object('order_number', v_order_number, 'total', v_subtotal + v_shipping, 'currency', 'INR');
+end;
+$$;
+revoke all on function public.create_account_order(jsonb) from public, anon;
+grant execute on function public.create_account_order(jsonb) to authenticated;
+
+commit;
+;
+  if v_customer_id is null then raise exception 'Complete your name, phone and delivery address in your profile before ordering'; end if;
   if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) < 1 or jsonb_array_length(p_items) > 30 then raise exception 'Invalid order items'; end if;
 
   for v_line in
