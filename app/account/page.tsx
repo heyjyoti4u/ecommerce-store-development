@@ -19,6 +19,8 @@ export default function AccountPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [isAdmin, setIsAdmin] = useState(false)
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const [awaitingVerification, setAwaitingVerification] = useState(false)
+  const [pendingEmail, setPendingEmail] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(true)
@@ -88,17 +90,53 @@ export default function AccountPage() {
     try {
       const supabase = getSupabaseBrowserClient()
       if (mode === 'signup') {
-        const { data, error: authError } = await supabase.auth.signUp({ email, password, options: { data: { full_name: form.full_name } } })
+        const emailRedirectTo = `${window.location.origin}/auth/callback?next=/account`
+        const { data, error: authError } = await supabase.auth.signUp({
+          email: email.trim().toLowerCase(),
+          password,
+          options: { data: { full_name: form.full_name.trim() }, emailRedirectTo },
+        })
         if (authError) throw authError
-        if (!data.session) setMessage('Account created. Please verify your email, then sign in.')
-        else { setMessage('Your account is ready.'); await loadAccount() }
+        if (data.session) {
+          setAwaitingVerification(false)
+          setMessage('Your account is ready.')
+          await loadAccount()
+        } else {
+          setPendingEmail(email.trim().toLowerCase())
+          setAwaitingVerification(true)
+          setMessage('')
+        }
       } else {
-        const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
-        if (authError) throw authError
+        const { error: authError } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
+        if (authError) {
+          if (authError.message.toLowerCase().includes('email not confirmed')) {
+            setPendingEmail(email.trim().toLowerCase())
+            setAwaitingVerification(true)
+            return
+          }
+          throw authError
+        }
+        setAwaitingVerification(false)
         await loadAccount()
       }
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Authentication failed.') }
     finally { setSaving(false) }
+  }
+
+  async function resendVerification() {
+    if (!pendingEmail) return
+    setSaving(true); setError(''); setMessage('')
+    try {
+      const { error: resendError } = await getSupabaseBrowserClient().auth.resend({
+        type: 'signup',
+        email: pendingEmail,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/account` },
+      })
+      if (resendError) throw resendError
+      setMessage('A new verification email has been sent. Please check your inbox and spam folder.')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not resend verification email.')
+    } finally { setSaving(false) }
   }
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
@@ -142,7 +180,14 @@ export default function AccountPage() {
     <div className="store-page-heading"><span className="section-kicker">Your ORO account</span><h1 className="section-title">A little more you.</h1><p className="section-intro">Your details, delivery address and every order in one place.</p></div>
     {error && <p className="account-alert account-error" role="alert">{error}</p>}
     {message && <p className="account-alert" role="status">{message}</p>}
-    {busy ? <p>Loading your account…</p> : !user ? <section className="account-auth">
+    {busy ? <p>Loading your account…</p> : !user ? awaitingVerification ? <section className="account-auth account-verification">
+      <div className="verification-mark"><Package size={25} /></div>
+      <span className="section-kicker">One last step</span>
+      <h2>Waiting for email verification.</h2>
+      <p>We sent a confirmation link to <strong>{pendingEmail}</strong>. Open that email and click the link to activate your ORO account. This page will not show your profile until your email is verified.</p>
+      <button className="button-dark full-width" type="button" disabled={saving} onClick={() => void resendVerification()}>{saving ? 'Sending…' : 'Resend verification email'}</button>
+      <button className="verification-back" type="button" onClick={() => { setAwaitingVerification(false); setMode('signin'); setMessage(''); setError('') }}>Back to sign in</button>
+    </section> : <section className="account-auth">
       <div className="account-auth-tabs"><button className={mode === 'signin' ? 'active' : ''} onClick={() => setMode('signin')} type="button">Sign in</button><button className={mode === 'signup' ? 'active' : ''} onClick={() => setMode('signup')} type="button">Create account</button></div>
       <form className="account-form" onSubmit={authenticate}>
         {mode === 'signup' && <label className="form-field">Full name<input required autoComplete="name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></label>}
@@ -150,7 +195,7 @@ export default function AccountPage() {
         <label className="form-field">Password<input type="password" required minLength={6} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} /></label>
         <button className="button-dark full-width" disabled={saving}>{saving ? 'Please wait…' : mode === 'signup' ? 'Create account' : 'Sign in'}</button>
       </form>
-      <p className="detail-note">Use at least 6 characters for your password. Email verification may be required.</p>
+      <p className="detail-note">Passwords are securely managed by Supabase Authentication. Email verification is required for new accounts.</p>
     </section> : <div className="account-layout">
       <section className="account-profile">
         <div className="account-profile-heading">
