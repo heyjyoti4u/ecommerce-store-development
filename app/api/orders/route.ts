@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     const size = typeof line.size === 'string' ? line.size.slice(0, 40) : ''
     const color = typeof line.color === 'string' ? line.color.slice(0, 40) : ''
     const quantity = Number(line.quantity)
-    if (!productId || !size || !color || !Number.isInteger(quantity) || quantity < 1 || quantity > 10) return NextResponse.json({ error: 'A product option or quantity is invalid.' }, { status: 400 })
+    if (!productId || size.length > 40 || color.length > 40 || !Number.isInteger(quantity) || quantity < 1 || quantity > 10) return NextResponse.json({ error: 'A product option or quantity is invalid.' }, { status: 400 })
     const key = `${productId}:${size}:${color}`
     const previous = normalized.get(key)
     const totalQuantity = (previous?.quantity ?? 0) + quantity
