@@ -31,16 +31,28 @@ export default function AccountPage() {
     const { data: { user: current } } = await supabase.auth.getUser()
     if (!current) { setUser(null); setProfile(null); setOrders([]); setBusy(false); return }
     setUser({ id: current.id, email: current.email ?? '' })
+    const metadataName = typeof current.user_metadata?.full_name === 'string' ? current.user_metadata.full_name : ''
+    const { error: profileCreateError } = await supabase.from('customer_profiles').upsert({
+      user_id: current.id,
+      email: (current.email ?? '').toLowerCase(),
+      full_name: metadataName || (current.email ?? '').split('@')[0],
+      phone: '',
+      address: '',
+      city: '',
+      state: '',
+      postal_code: '',
+    }, { onConflict: 'user_id', ignoreDuplicates: true })
     const [{ data: profileRow, error: profileError }, { data: orderRows, error: orderError }, { data: adminRow }] = await Promise.all([
       supabase.from('customer_profiles').select('*').eq('user_id', current.id).maybeSingle(),
       supabase.from('orders').select('id,order_number,total,status,payment_status,created_at,order_items(product_name,unit_price,size,color,quantity,line_total)').order('created_at', { ascending: false }),
       supabase.from('admin_users').select('user_id').eq('user_id', current.id).maybeSingle(),
     ])
+    if (profileCreateError) setError(profileCreateError.message)
     if (profileError) setError(profileError.message)
     if (orderError) setError(orderError.message)
     if (profileRow) {
       setProfile(profileRow as Profile)
-      setForm({ full_name: profileRow.full_name ?? '', phone: profileRow.phone ?? '', address: profileRow.address ?? '', city: profileRow.city ?? '', state: profileRow.state ?? '', postal_code: profileRow.postal_code ?? '' })
+      setForm({ full_name: profileRow.full_name ?? metadataName, phone: profileRow.phone ?? '', address: profileRow.address ?? '', city: profileRow.city ?? '', state: profileRow.state ?? '', postal_code: profileRow.postal_code ?? '' })
     }
     setOrders((orderRows ?? []) as unknown as Order[])
     setIsAdmin(Boolean(adminRow))
@@ -145,8 +157,9 @@ export default function AccountPage() {
           <div className="account-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt="Your profile" /> : <UserRound size={30} />}</div>
           <div><h2>{profile?.full_name || user.email}</h2><p>{user.email}</p></div>
         </div>
-        <label className="account-upload">Change profile photo<input type="file" accept="image/png,image/jpeg,image/webp" disabled={saving} onChange={(e) => void uploadAvatar(e.target.files?.[0])} /></label>
-        <form className="account-form" onSubmit={saveProfile}>
+        <label className="account-upload"><span>{saving ? 'Uploading…' : 'Change profile photo'}</span><input type="file" accept="image/png,image/jpeg,image/webp" disabled={saving} onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadAvatar(file); e.currentTarget.value = '' }} /></label>
+        <p className="account-photo-hint">JPG, PNG or WEBP · maximum 3 MB</p>
+        <form className="account-form account-details-form" onSubmit={saveProfile}>
           <h2>Personal & delivery details</h2>
           {([['full_name','Full name','name'],['phone','Mobile number','tel'],['address','Street address','street-address'],['city','City','address-level2'],['state','State','address-level1'],['postal_code','PIN code','postal-code']] as const).map(([key,label,autocomplete]) => <label className="form-field" key={key}>{label}<input required autoComplete={autocomplete} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} /></label>)}
           <button className="button-dark full-width" disabled={saving}>{saving ? 'Saving…' : 'Save details'}</button>
