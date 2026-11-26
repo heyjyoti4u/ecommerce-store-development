@@ -91,6 +91,10 @@ export default function AdminPage() {
 
   return <><StoreHeader /><main className="store-page account-page admin-page">
     <div className="store-breadcrumb"><Link href="/">Home</Link><span>/</span> Admin</div>
+    <nav aria-label="Admin navigation" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', margin: '24px 0' }}>
+      <Link className="account-signout" href="/admin/products">Products</Link>
+      <Link className="button-dark" href="/admin/orders">Orders & customers</Link>
+    </nav>
     <div className="store-page-heading">
       <span className="section-kicker"><ShieldCheck size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> ORO administration</span>
       <h1 className="section-title">Order dashboard.</h1>
