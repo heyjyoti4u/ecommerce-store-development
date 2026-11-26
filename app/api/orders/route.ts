@@ -34,12 +34,30 @@ export async function POST(request: Request) {
     normalized.set(key, { product_id: productId, size, color, quantity: totalQuantity })
   }
 
-  const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
-  const { data, error } = await supabase.rpc('create_guest_order', {
-    p_customer: Object.fromEntries(required.map((field) => [field, field === 'phone' ? String(customer[field]).replace(/\D/g, '').slice(-10) : String(customer[field]).trim()])),
-    p_items: [...normalized.values()],
-    p_payment_method: 'cod',
-  })
+  const authorization = request.headers.get('authorization')
+  let data: { order_number: string; total: number } | null = null
+  let error: { message: string } | null = null
+
+  if (authorization?.startsWith('Bearer ')) {
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY
+    if (!anonKey) return NextResponse.json({ error: 'Supabase anon key is missing for account checkout.' }, { status: 503 })
+    const accountClient = createClient(url, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { Authorization: authorization } },
+    })
+    const result = await accountClient.rpc('create_account_order', { p_items: [...normalized.values()] })
+    data = result.data
+    error = result.error
+  } else {
+    const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
+    const result = await supabase.rpc('create_guest_order', {
+      p_customer: Object.fromEntries(required.map((field) => [field, field === 'phone' ? String(customer[field]).replace(/\D/g, '').slice(-10) : String(customer[field]).trim()])),
+      p_items: [...normalized.values()],
+      p_payment_method: 'cod',
+    })
+    data = result.data
+    error = result.error
+  }
   if (error) {
     console.error('[orders] Supabase order creation failed:', error.message)
     return NextResponse.json({ error: 'We could not save your order. Please try again in a moment.' }, { status: 503 })
