@@ -40,6 +40,9 @@ using(user_id=(select auth.uid()));
 drop policy if exists "Customers can update own profile" on public.customer_profiles;
 create policy "Customers can update own profile" on public.customer_profiles for update to authenticated
 using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
+drop policy if exists "Customers can insert own profile" on public.customer_profiles;
+create policy "Customers can insert own profile" on public.customer_profiles for insert to authenticated
+with check(user_id=(select auth.uid()));
 
 drop policy if exists "Customers can read own orders" on public.orders;
 create policy "Customers can read own orders" on public.orders for select to authenticated
@@ -47,7 +50,7 @@ using(exists(select 1 from public.customer_profiles p where p.id=orders.customer
 drop policy if exists "Customers can read own order items" on public.order_items;
 create policy "Customers can read own order items" on public.order_items for select to authenticated
 using(exists(select 1 from public.orders o join public.customer_profiles p on p.id=o.customer_id where o.id=order_items.order_id and p.user_id=(select auth.uid())));
-grant select,update on public.customer_profiles to authenticated;
+grant select,insert,update on public.customer_profiles to authenticated;
 grant select on public.orders,public.order_items to authenticated;
 
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
