@@ -6,11 +6,19 @@ export type Product = {
   oldPrice?: number
   image: string
   hoverImage?: string
+  variantImages?: Record<string, string[]>
   alt: string
   description: string
   sizes: string[]
   colors: string[]
   badge?: string
+}
+
+export function getProductImages(product: Product, color = product.colors[0] ?? '') {
+  const variantGallery = product.variantImages?.[color]?.filter(Boolean)
+  if (variantGallery?.length) return variantGallery
+  const gallery = [product.image, product.hoverImage].filter((image): image is string => Boolean(image))
+  return product.colors.indexOf(color) > 0 ? gallery.reverse() : gallery
 }
 
 export const products: Product[] = [

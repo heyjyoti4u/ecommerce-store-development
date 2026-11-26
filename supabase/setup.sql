@@ -9,6 +9,7 @@ create table if not exists public.products (
   price numeric(10,2) not null check (price >= 0),
   old_price numeric(10,2) check (old_price is null or old_price >= price),
   image text not null,
+  variant_images jsonb not null default '{}'::jsonb,
   alt text not null,
   description text not null,
   sizes jsonb not null default '["One size"]'::jsonb,
@@ -17,6 +18,8 @@ create table if not exists public.products (
   active boolean not null default true,
   created_at timestamptz not null default now()
 );
+
+alter table public.products add column if not exists variant_images jsonb not null default '{}'::jsonb;
 
 create table if not exists public.customer_profiles (
   id uuid primary key default gen_random_uuid(),
@@ -140,5 +143,22 @@ insert into public.products (id, name, category, price, old_price, image, alt, d
 ('fine-chain-necklace', 'Fine Chain Necklace', 'Accessories', 1690, 2190, 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=1100&q=85', 'Delicate fine gold chain necklace', 'A delicate everyday chain with an understated pendant. Designed for layering, lovely worn alone.', '["One size"]', '["Gold"]', null),
 ('cotton-everyday-trouser', 'Everyday Cotton Trouser', 'Clothing', 3490, 4290, 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&w=1100&q=85', 'Relaxed straight-leg trousers in a warm neutral shade', 'Relaxed, high-rise trousers cut in soft cotton twill. A forever pair for slow days and full calendars alike.', '["XS","S","M","L","XL"]', '["Stone","Ink"]', null)
 on conflict (id) do nothing;
+
+update public.products set variant_images = jsonb_build_object(
+  'Oat', jsonb_build_array('/product-linen-dress.png', '/product-linen-dress-alt.png'),
+  'Ink', jsonb_build_array('/product-linen-dress-alt.png', '/product-linen-dress.png')
+) where id = 'linen-day-dress' and variant_images = '{}'::jsonb;
+update public.products set variant_images = jsonb_build_object(
+  'Cognac', jsonb_build_array('/product-carryall.png', '/product-carryall-alt.png'),
+  'Black', jsonb_build_array('/product-carryall-alt.png', '/product-carryall.png')
+) where id = 'everyday-carryall' and variant_images = '{}'::jsonb;
+update public.products set variant_images = jsonb_build_object(
+  'Cloud', jsonb_build_array('/product-poplin-shirt.png', '/product-poplin-shirt-alt.png'),
+  'Sage', jsonb_build_array('/product-poplin-shirt-alt.png', '/product-poplin-shirt.png')
+) where id = 'soft-structure-shirt' and variant_images = '{}'::jsonb;
+update public.products set variant_images = jsonb_build_object(
+  'Gold', jsonb_build_array('/product-gold-hoops.png', '/product-gold-hoops-alt.png'),
+  'Silver', jsonb_build_array('/product-gold-hoops-alt.png', '/product-gold-hoops.png')
+) where id = 'sculpted-hoops' and variant_images = '{}'::jsonb;
 
 commit;
