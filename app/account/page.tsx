@@ -227,8 +227,11 @@ export default function AccountPage() {
         <p className="account-photo-hint">JPG, PNG or WEBP · maximum 3 MB</p>
         <form className="account-form account-details-form" onSubmit={saveProfile}>
           <div className="account-details-heading">
-            <h2>Personal & delivery details</h2>
-            {!isEditingProfile && <button className="button-dark" type="button" onClick={() => { setForm({ full_name: profile?.full_name ?? '', phone: profile?.phone ?? '', address: profile?.address ?? '', city: profile?.city ?? '', state: profile?.state ?? '', postal_code: profile?.postal_code ?? '' }); setIsEditingProfile(true); setMessage(''); setError('') }}>Edit profile</button>}
+            <div className="account-details-copy">
+              <h2>Personal & delivery details</h2>
+              <p>Keep your details up to date for a smoother checkout and accurate delivery. Your saved information stays securely linked to your ORO account.</p>
+            </div>
+            {!isEditingProfile && <button className="button-dark account-edit-button" type="button" onClick={() => { setForm({ full_name: profile?.full_name ?? '', phone: profile?.phone ?? '', address: profile?.address ?? '', city: profile?.city ?? '', state: profile?.state ?? '', postal_code: profile?.postal_code ?? '' }); setIsEditingProfile(true); setMessage(''); setError('') }}>Edit profile</button>}
           </div>
           {([['full_name','Full name','name'],['phone','Mobile number','tel'],['address','Street address','street-address'],['city','City','address-level2'],['state','State','address-level1'],['postal_code','PIN code','postal-code']] as const).map(([key,label,autocomplete]) => <label className="form-field" key={key}>{label}<input required disabled={!isEditingProfile || saving} autoComplete={autocomplete} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} /></label>)}
           {isEditingProfile && <div className="account-edit-actions">
