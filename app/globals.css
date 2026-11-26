@@ -988,3 +988,30 @@ a { color: inherit; text-decoration: none; }
   .oro-header .header-actions { gap:9px; }
   .oro-header .header-actions .action-label { display:none; }
 }
+
+.admin-page { padding-bottom:90px; }
+.admin-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin:28px 0 42px; }
+.admin-stats article { padding:22px; border:1px solid var(--border); background:#fbfaf7; display:grid; gap:10px; }
+.admin-stats article span { color:#77766f; font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
+.admin-stats article strong { font:400 27px 'Playfair Display',Georgia,serif; }
+.admin-list-heading { display:flex; align-items:center; justify-content:space-between; padding-bottom:16px; border-bottom:1px solid var(--border); }
+.admin-list-heading > div { display:flex; align-items:center; gap:12px; }
+.admin-list-heading h2 { margin:0; font:400 24px 'Playfair Display',Georgia,serif; }
+.admin-list-heading button { display:flex; align-items:center; gap:7px; }
+.admin-order { padding:22px 0; border-bottom:1px solid var(--border); }
+.admin-order-head { display:flex; justify-content:space-between; gap:16px; }
+.admin-order-head > div { display:grid; gap:5px; }
+.admin-order-head strong { font-size:13px; }
+.admin-order-head span,.admin-order-meta { color:#77766f; font-size:11px; }
+.admin-order-grid { display:grid; grid-template-columns:1fr 1.4fr; gap:28px; margin:18px 0; }
+.admin-order-grid h3 { margin:0 0 9px; color:#77766f; font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
+.admin-order-grid p { margin:5px 0; font-size:12px; line-height:1.6; }
+.admin-order-foot { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.admin-order-foot label { display:flex; align-items:center; gap:10px; color:#77766f; font-size:12px; }
+.admin-order-foot select { min-width:140px; border:1px solid var(--border); background:#fbfaf7; padding:9px 12px; color:#252923; }
+@media(max-width:640px) {
+ .admin-stats { grid-template-columns:1fr; gap:8px; margin:20px 0 30px; }
+ .admin-stats article { padding:15px; }
+ .admin-order-grid { grid-template-columns:1fr; gap:15px; }
+ .admin-order-foot { align-items:flex-start; flex-direction:column; }
+}
