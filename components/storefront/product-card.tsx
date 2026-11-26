@@ -24,7 +24,6 @@ export default function ProductCard({ product }: { product: Product }) {
         <Link className="product-photo" href={`/products/${product.id}`} aria-label={`View ${product.name} in ${color}`}>
           {product.badge && <span className="product-badge">{product.badge}</span>}
           <img className="product-image-primary" src={images[0] ?? product.image} alt={`${product.name} in ${color}`} loading="lazy" decoding="async" />
-          {images[1] && <img className="product-image-hover" src={images[1]} alt="" aria-hidden="true" loading="lazy" decoding="async" />}
         </Link>
         <button className="product-add" type="button" onClick={() => setQuickView(true)} aria-label={`Choose options for ${product.name}`}><Plus size={17} /></button>
       </div>
