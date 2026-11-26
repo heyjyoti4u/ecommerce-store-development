@@ -113,6 +113,24 @@ using (
 grant select, insert, update on public.customer_profiles to authenticated;
 grant select on public.orders, public.order_items to authenticated;
 
+-- Allow verified admin users to update order fulfilment status from /admin/orders.
+grant update (status) on public.orders to authenticated;
+drop policy if exists "Admins can update order status" on public.orders;
+create policy "Admins can update order status"
+on public.orders for update to authenticated
+using (
+  exists (
+    select 1 from public.admin_users a
+    where a.user_id = (select auth.uid())
+  )
+)
+with check (
+  exists (
+    select 1 from public.admin_users a
+    where a.user_id = (select auth.uid())
+  )
+);
+
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('avatars', 'avatars', true, 3145728, array['image/jpeg', 'image/png', 'image/webp'])
 on conflict (id) do update
