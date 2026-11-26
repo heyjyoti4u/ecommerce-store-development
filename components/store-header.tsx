@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { Menu, Search, ShoppingBag, X } from 'lucide-react'
+import { Menu, Search, ShoppingBag, UserRound, X } from 'lucide-react'
 import { useCart } from '@/components/storefront/cart-store'
 
 const productLink = '/products'
@@ -68,6 +68,9 @@ export default function StoreHeader() {
         </nav>
 
         <div className="header-actions">
+          <Link className="icon-action" href="/account" aria-label="My account">
+            <UserRound size={18} />
+          </Link>
           <Link className="icon-action" href={productLink} aria-label="Search products">
             <Search size={18} />
             <span className="action-label">Search</span>
