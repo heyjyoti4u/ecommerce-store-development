@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import StoreHeader from '@/components/store-header'
 import { useCart } from '@/components/storefront/cart-store'
 import { formatPrice } from '@/lib/store-products'
@@ -16,6 +16,28 @@ export default function CheckoutPage() {
   const [form, setForm] = useState(emptyForm)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return
+    let active = true
+    void import('@/lib/supabase/client').then(async ({ getSupabaseBrowserClient }) => {
+      const supabase = getSupabaseBrowserClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || !active) return
+      const { data } = await supabase.from('customer_profiles').select('full_name,phone,address,city,state,postal_code,email').eq('user_id', user.id).maybeSingle()
+      if (!data || !active) return
+      setForm({
+        name: data.full_name ?? '',
+        email: data.email ?? user.email ?? '',
+        phone: data.phone ?? '',
+        address: data.address ?? '',
+        city: data.city ?? '',
+        state: data.state ?? '',
+        postal: data.postal_code ?? '',
+      })
+    }).catch(() => {})
+    return () => { active = false }
+  }, [])
   const shipping = subtotal >= 3000 || subtotal === 0 ? 0 : 150
   async function placeOrder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
