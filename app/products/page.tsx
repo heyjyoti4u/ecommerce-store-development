@@ -3,6 +3,8 @@ import StoreHeader from '@/components/store-header'
 import ProductCard from '@/components/storefront/product-card'
 import { getCatalog } from '@/lib/catalog'
 
+export const revalidate = 60
+
 export const metadata = { title: 'Shop all — ORO', description: 'Explore thoughtful clothing, bags and accessories from ORO. Prices in Indian rupees.' }
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
