@@ -1,12 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
 export default function AuthCallbackPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -14,10 +13,11 @@ export default function AuthCallbackPage() {
     async function finishVerification() {
       try {
         const supabase = getSupabaseBrowserClient()
-        const code = searchParams.get('code')
-        const tokenHash = searchParams.get('token_hash')
-        const type = searchParams.get('type')
-        const authError = searchParams.get('error_description') || searchParams.get('error')
+        const params = new URLSearchParams(window.location.search)
+        const code = params.get('code')
+        const tokenHash = params.get('token_hash')
+        const type = params.get('type')
+        const authError = params.get('error_description') || params.get('error')
 
         if (authError) throw new Error(decodeURIComponent(authError.replace(/\+/g, ' ')))
         if (code) {
@@ -37,7 +37,7 @@ export default function AuthCallbackPage() {
     }
     void finishVerification()
     return () => { active = false }
-  }, [router, searchParams])
+  }, [router])
 
   return <main className="store-page account-page">
     <section className="account-auth account-verification">
