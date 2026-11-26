@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { LogOut, Package, RefreshCw, ShieldCheck } from 'lucide-react'
-import StoreHeader from '@/components/store-header'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/store-products'
 
@@ -89,7 +88,7 @@ export default function AdminPage() {
   const totalRevenue = orders.filter((order) => order.status !== 'cancelled').reduce((sum, order) => sum + Number(order.total), 0)
   const pending = orders.filter((order) => ['confirmed', 'processing'].includes(order.status)).length
 
-  return <><StoreHeader /><main className="store-page account-page admin-page">
+  return <main className="store-page account-page admin-page">
     <div className="store-breadcrumb"><Link href="/">Home</Link><span>/</span> Admin</div>
     <nav aria-label="Admin navigation" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', margin: '24px 0' }}>
       <Link className="account-signout" href="/admin/products">Products</Link>
@@ -141,5 +140,6 @@ export default function AdminPage() {
       </article>)}
       <button className="account-signout" type="button" onClick={() => void signOut()}><LogOut size={15} /> Sign out</button>
     </>}
-  </main></>
+  </main>
 }
+
