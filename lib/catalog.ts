@@ -19,9 +19,22 @@ export const getCatalog = unstable_cache(async (): Promise<Product[]> => {
   if (catalog.error || !catalog.data?.length) return demoProducts
   return catalog.data.map((row) => {
     const variantImages = 'variant_images' in row ? row.variant_images : undefined
+    const toOptions = (value: unknown): string[] => {
+      if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+      if (typeof value === 'string') {
+        try {
+          const parsed: unknown = JSON.parse(value)
+          return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0) : []
+        } catch {
+          return []
+        }
+      }
+      return []
+    }
     return {
       id: row.id, name: row.name, category: row.category, price: Number(row.price), oldPrice: row.old_price ? Number(row.old_price) : undefined,
-      image: row.image, hoverImage: demoProducts.find((product) => product.id === row.id)?.hoverImage, variantImages: variantImages ?? undefined, alt: row.alt, description: row.description, sizes: row.sizes ?? ['One size'], colors: row.colors ?? ['Natural'], badge: row.badge ?? undefined,
+      image: row.image, hoverImage: demoProducts.find((product) => product.id === row.id)?.hoverImage, variantImages: variantImages ?? undefined, alt: row.alt, description: row.description,
+      sizes: toOptions(row.sizes), colors: toOptions(row.colors), badge: row.badge ?? undefined,
     }
   }) as Product[]
 }, ['oro-product-catalog'], { revalidate: 60, tags: ['products'] })
