@@ -5,6 +5,33 @@ alter table public.customer_profiles
   add column if not exists user_id uuid unique references auth.users(id) on delete cascade,
   add column if not exists avatar_url text;
 
+-- Attach newly registered accounts to an existing guest profile with the same email,
+-- or create a minimal profile that the customer can complete after sign-in.
+create or replace function public.handle_new_customer_account()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $
+begin
+  insert into public.customer_profiles(email, full_name, phone, address, city, state, postal_code, user_id)
+  values (
+    lower(new.email),
+    coalesce(nullif(trim(new.raw_user_meta_data->>'full_name'), ''), split_part(new.email, '@', 1)),
+    '', '', '', '', '', new.id
+  )
+  on conflict (email) do update set user_id = excluded.user_id,
+    full_name = case when public.customer_profiles.full_name = '' then excluded.full_name else public.customer_profiles.full_name end,
+    updated_at = now();
+  return new;
+end;
+$;
+
+drop trigger if exists on_auth_user_created_oro_profile on auth.users;
+create trigger on_auth_user_created_oro_profile
+  after insert on auth.users
+  for each row execute procedure public.handle_new_customer_account();
+
 create index if not exists orders_customer_created_idx on public.orders(customer_id, created_at desc);
 create index if not exists order_items_order_idx on public.order_items(order_id);
 
