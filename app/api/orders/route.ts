@@ -41,6 +41,7 @@ export async function POST(request: Request) {
   if (authorization?.startsWith('Bearer ')) {
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY
     if (!anonKey) return NextResponse.json({ error: 'Supabase anon key is missing for account checkout.' }, { status: 503 })
+    const token = authorization.slice(7)
     const accountClient = createClient(url, anonKey, {
       auth: { persistSession: false, autoRefreshToken: false },
       global: { headers: { Authorization: authorization } },
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
     if (authError || !authData.user) return NextResponse.json({ error: 'Please sign in again before placing your order.' }, { status: 401 })
     const { error: profileError } = await accountClient.from('customer_profiles').update({
       full_name: String(customer.name).trim(),
-      phone: String(customer.phone).replace(/\\D/g, '').slice(-10),
+      phone: String(customer.phone).replace(/\D/g, '').slice(-10),
       address: String(customer.address).trim(),
       city: String(customer.city).trim(),
       state: String(customer.state).trim(),
