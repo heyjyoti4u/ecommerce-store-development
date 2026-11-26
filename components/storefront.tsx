@@ -21,6 +21,7 @@ export default function Storefront() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [notice, setNotice] = useState('')
+  const [openMobileCategory, setOpenMobileCategory] = useState('')
 
   const visibleProducts = useMemo(() => products.filter((product) => {
     const matchesCategory = category === 'Everything' || product.category === category
@@ -69,21 +70,181 @@ export default function Storefront() {
   return (
     <main>
       <div className="announcement">A little something, on us — complimentary shipping over ₹3,000</div>
-      <header className="site-header">
-        <div className="header-main">
-          <button className="mobile-menu" type="button" aria-label="Open menu" onClick={() => setMenuOpen((value) => !value)}><Menu size={19} /></button>
-          <nav className="header-nav multi-nav" aria-label="Main navigation">
-            <div className="nav-group"><a href="/products">Shop</a><div className="nav-submenu"><a href="/products">All products</a><a href="/products?category=Clothing">Clothing</a><a href="/products?category=Bags">Bags</a><a href="/products?category=Accessories">Accessories</a></div></div><a href="/about">Our story</a>
-          </nav>
-          <a className="brand serif" href="#top" aria-label="ORO home">ORO</a>
-          <div className="header-actions">
-            <button className="icon-action" type="button" aria-label="Search products" onClick={() => { setSearchOpen((value) => !value); document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' }) }}><Search size={17} /><span className="action-label">Search</span></button>
-            <button className="icon-action" type="button" aria-label={`Open bag, ${itemCount} items`} onClick={() => setCartOpen(true)}><ShoppingBag size={17} /><span className="action-label">Bag</span><span className="bag-count">{itemCount}</span></button>
+      
+<header className="site-header oro-header">
+  <div className="header-main oro-header-main">
+
+    {/* Mobile menu button */}
+    <button
+      className="mobile-menu"
+      type="button"
+      aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}
+      aria-expanded={menuOpen}
+      onClick={() => setMenuOpen(!menuOpen)}
+    >
+      {menuOpen ? <X size={20} /> : <Menu size={20} />}
+    </button>
+
+    {/* Brand */}
+    <a className="brand serif" href="#top" aria-label="ORO home">
+      ORO
+    </a>
+
+    {/* Desktop navigation */}
+    <nav className="header-nav multi-nav oro-desktop-nav" aria-label="Main navigation">
+
+      <div className="nav-group oro-nav-group">
+        <a href="/products" className="oro-nav-trigger">
+          Shop <span>⌄</span>
+        </a>
+
+        {/* Mega menu */}
+        <div className="oro-mega-menu">
+
+          <div className="oro-mega-column">
+            <span className="oro-mega-heading">Explore the collection</span>
+            <a href="/products">All products</a>
+            <a href="/products?category=Clothing">Clothing</a>
+            <a href="/products?category=Bags">Bags</a>
+            <a href="/products?category=Accessories">Accessories</a>
           </div>
+
+          <div className="oro-mega-column">
+            <span className="oro-mega-heading">Featured collections</span>
+            <a href="/products">Best sellers</a>
+            <a href="/products?category=Clothing">New arrivals</a>
+            <a href="/products?category=Accessories">The little extras</a>
+            <a href="/products">Everyday edit</a>
+          </div>
+
+          <a className="oro-mega-feature" href="/products?category=Clothing">
+            <img src="/atelier-hero.png" alt="Explore clothing collection" />
+            <span>
+              Shop <strong>the everyday edit</strong>
+            </span>
+          </a>
+
+          <a className="oro-mega-feature" href="/products?category=Bags">
+            <img src="/atelier-hero.png" alt="Explore everyday bags" />
+            <span>
+              Find your <strong>everyday carry</strong>
+            </span>
+          </a>
+
         </div>
-        {searchOpen && <div className="mobile-search"><input aria-label="Search clothing and accessories" autoFocus placeholder="Search pieces, bags, accessories…" value={query} onChange={(event) => setQuery(event.target.value)} /></div>}
-        {menuOpen && <div className="mobile-search" style={{ display: 'flex', alignItems: 'center', gap: 20 }}><button className="category-chip" onClick={() => jumpToShop('Clothing')}>Clothing</button><button className="category-chip" onClick={() => jumpToShop('Bags')}>Bags</button><button className="category-chip" onClick={() => jumpToShop('Accessories')}>Accessories</button></div>}
-      </header>
+      </div>
+
+      <a href="/about">Our story</a>
+      <a href="#story">Explore</a>
+      <a href="/products">Sale</a>
+
+    </nav>
+
+    {/* Header actions */}
+    <div className="header-actions">
+
+      <button
+        className="icon-action"
+        type="button"
+        aria-label="Search products"
+        onClick={() => {
+          setSearchOpen(!searchOpen)
+          setMenuOpen(false)
+          document.getElementById('shop')?.scrollIntoView({
+            behavior: 'smooth'
+          })
+        }}
+      >
+        <Search size={18} />
+        <span className="action-label">Search</span>
+      </button>
+
+      <button
+        className="icon-action"
+        type="button"
+        aria-label={`Open bag, ${itemCount} items`}
+        onClick={() => setCartOpen(true)}
+      >
+        <ShoppingBag size={18} />
+        <span className="action-label">Bag</span>
+        <span className="bag-count">{itemCount}</span>
+      </button>
+
+    </div>
+  </div>
+
+  {/* Search */}
+  {searchOpen && (
+    <div className="mobile-search">
+      <input
+        aria-label="Search clothing and accessories"
+        autoFocus
+        placeholder="Search pieces, bags, accessories..."
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+      />
+    </div>
+  )}
+
+  {/* Mobile navigation */}
+  {menuOpen && (
+    <div className="oro-mobile-panel">
+
+      <div className="oro-mobile-panel-inner">
+
+        <div className="oro-mobile-links">
+
+          <button
+            type="button"
+            className="oro-mobile-row"
+            aria-expanded={openMobileCategory === 'shop'}
+            onClick={() =>
+              setOpenMobileCategory(
+                openMobileCategory === 'shop' ? '' : 'shop'
+              )
+            }
+          >
+            Shop
+            <span>{openMobileCategory === 'shop' ? '−' : '+'}</span>
+          </button>
+
+          {openMobileCategory === 'shop' && (
+            <div className="oro-mobile-submenu">
+              <a href="/products" onClick={() => setMenuOpen(false)}>All products</a>
+              <a href="/products?category=Clothing" onClick={() => setMenuOpen(false)}>Clothing</a>
+              <a href="/products?category=Bags" onClick={() => setMenuOpen(false)}>Bags</a>
+              <a href="/products?category=Accessories" onClick={() => setMenuOpen(false)}>Accessories</a>
+            </div>
+          )}
+
+          <a className="oro-mobile-row" href="/about" onClick={() => setMenuOpen(false)}>
+            Our story <span>↗</span>
+          </a>
+
+          <a className="oro-mobile-row" href="#story" onClick={() => setMenuOpen(false)}>
+            Explore <span>↗</span>
+          </a>
+
+          <a className="oro-mobile-row" href="/products" onClick={() => setMenuOpen(false)}>
+            Sale <span>↗</span>
+          </a>
+
+        </div>
+
+        <div className="oro-mobile-quicklinks">
+          <span>Shop by category</span>
+
+          <button onClick={() => jumpToShop('Clothing')}>Clothing</button>
+          <button onClick={() => jumpToShop('Bags')}>Bags</button>
+          <button onClick={() => jumpToShop('Accessories')}>Accessories</button>
+        </div>
+
+      </div>
+    </div>
+  )}
+
+</header>
+
 
       <section id="top" className="hero" aria-label="New season collection">
         <Image className="hero-img" src="/atelier-hero.png" alt="Model in relaxed linen with a timeless everyday tote" fill priority sizes="100vw" />
