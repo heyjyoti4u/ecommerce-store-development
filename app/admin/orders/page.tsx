@@ -20,7 +20,13 @@ type AdminOrder = {
   order_items: { product_name: string; size: string; color: string; quantity: number; line_total: number }[]
 }
 
-const statuses = ['confirmed', 'processing', 'shipped', 'delivered', 'cancelled']
+const statuses = [
+  { value: 'confirmed', label: 'Order confirmed' },
+  { value: 'processing', label: 'Being prepared' },
+  { value: 'shipped', label: 'Shipped' },
+  { value: 'delivered', label: 'Delivered' },
+  { value: 'cancelled', label: 'Cancelled' },
+]
 
 export default function AdminPage() {
   const [email, setEmail] = useState('')
@@ -133,7 +139,7 @@ export default function AdminPage() {
           <span className="account-order-status">{order.status}</span>
           <label>Update status
             <select aria-label={'Status for ' + order.order_number} value={order.status} disabled={busyId === order.id} onChange={(event) => void updateStatus(order.id, event.target.value)}>
-              {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
+              {statuses.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}
             </select>
           </label>
         </div>
