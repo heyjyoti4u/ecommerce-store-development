@@ -104,7 +104,11 @@ export default function AccountPage() {
         } else {
           setPendingEmail(email.trim().toLowerCase())
           setAwaitingVerification(true)
-          setMessage('')
+          if (data.user && data.user.identities?.length === 0) {
+            setMessage('This email may already be registered. Try signing in, or request a fresh verification email below.')
+          } else {
+            setMessage('Check your inbox and spam folder for the verification link. Your profile will open after you confirm your email.')
+          }
         }
       } else {
         const { error: authError } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
