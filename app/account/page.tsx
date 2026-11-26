@@ -21,6 +21,7 @@ export default function AccountPage() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [awaitingVerification, setAwaitingVerification] = useState(false)
   const [pendingEmail, setPendingEmail] = useState('')
+  const [resendWait, setResendWait] = useState(0)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(true)
@@ -60,6 +61,12 @@ export default function AccountPage() {
     setIsAdmin(Boolean(adminRow))
     setBusy(false)
   }
+
+  useEffect(() => {
+    if (resendWait <= 0) return
+    const timer = window.setTimeout(() => setResendWait((seconds) => Math.max(0, seconds - 1)), 1000)
+    return () => window.clearTimeout(timer)
+  }, [resendWait])
 
   useEffect(() => {
     let alive = true
@@ -105,9 +112,17 @@ export default function AccountPage() {
           setPendingEmail(email.trim().toLowerCase())
           setAwaitingVerification(true)
           if (data.user && data.user.identities?.length === 0) {
-            setMessage('This email may already be registered. Try signing in, or request a fresh verification email below.')
+            const { error: resendError } = await supabase.auth.resend({
+              type: 'signup',
+              email: email.trim().toLowerCase(),
+              options: { emailRedirectTo },
+            })
+            if (resendError) throw resendError
+            setResendWait(60)
+            setMessage('This email already has an unverified account. We have sent a fresh verification link. Check your inbox and spam folder.')
           } else {
-            setMessage('Check your inbox and spam folder for the verification link. Your profile will open after you confirm your email.')
+            setResendWait(60)
+            setMessage('Check your inbox and spam folder for the verification link. You can request another link after the short resend cooldown.')
           }
         }
       } else {
@@ -128,7 +143,7 @@ export default function AccountPage() {
   }
 
   async function resendVerification() {
-    if (!pendingEmail) return
+    if (!pendingEmail || resendWait > 0 || saving) return
     setSaving(true); setError(''); setMessage('')
     try {
       const { error: resendError } = await getSupabaseBrowserClient().auth.resend({
@@ -137,7 +152,8 @@ export default function AccountPage() {
         options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/account` },
       })
       if (resendError) throw resendError
-      setMessage('A new verification email has been sent. Please check your inbox and spam folder.')
+      setResendWait(60)
+      setMessage('A new verification email has been sent. Please check your inbox and spam folder. You can resend again after 60 seconds.')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not resend verification email.')
     } finally { setSaving(false) }
@@ -189,7 +205,7 @@ export default function AccountPage() {
       <span className="section-kicker">One last step</span>
       <h2>Waiting for email verification.</h2>
       <p>We sent a confirmation link to <strong>{pendingEmail}</strong>. Open that email and click the link to activate your ORO account. This page will not show your profile until your email is verified.</p>
-      <button className="button-dark full-width" type="button" disabled={saving} onClick={() => void resendVerification()}>{saving ? 'Sending…' : 'Resend verification email'}</button>
+      <button className="button-dark full-width" type="button" disabled={saving || resendWait > 0} onClick={() => void resendVerification()}>{saving ? 'Sending…' : resendWait > 0 ? `Resend verification email (${resendWait}s)` : 'Resend verification email'}</button>
       <button className="verification-back" type="button" onClick={() => { setAwaitingVerification(false); setMode('signin'); setMessage(''); setError('') }}>Back to sign in</button>
     </section> : <section className="account-auth">
       <div className="account-auth-tabs"><button className={mode === 'signin' ? 'active' : ''} onClick={() => setMode('signin')} type="button">Sign in</button><button className={mode === 'signup' ? 'active' : ''} onClick={() => setMode('signup')} type="button">Create account</button></div>
