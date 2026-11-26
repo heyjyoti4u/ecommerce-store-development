@@ -906,3 +906,79 @@ a { color: inherit; text-decoration: none; }
 @media (prefers-reduced-motion:reduce) {
   .oro-mega-menu, .oro-mega-feature img, .oro-nav-trigger span { transition:none; }
 }
+
+
+/* Product quick view */
+.quick-view-backdrop {
+  position:fixed; inset:0; z-index:300; display:flex; align-items:center; justify-content:center;
+  padding:24px; background:rgba(24,27,23,.58); backdrop-filter:blur(3px);
+}
+.quick-view-modal {
+  position:relative; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  width:min(820px,100%); max-height:min(690px,calc(100dvh - 48px)); overflow:auto;
+  background:#f8f7f3; box-shadow:0 24px 80px rgba(0,0,0,.22);
+}
+.quick-view-close {
+  position:absolute; z-index:2; top:14px; right:14px; display:grid; place-items:center;
+  width:38px; height:38px; border:1px solid rgba(40,40,35,.14); border-radius:50%;
+  background:#f8f7f3; color:#252923;
+}
+.quick-view-image { min-height:480px; background:#e9e5dc; }
+.quick-view-image img { display:block; width:100%; height:100%; min-height:480px; object-fit:cover; }
+.quick-view-content { display:flex; flex-direction:column; justify-content:center; padding:48px 38px; }
+.quick-view-content h2 { margin:12px 0; font:400 32px/1.15 'Playfair Display',Georgia,serif; }
+.quick-view-price { margin:0 0 16px; font-size:15px; }
+.quick-view-price s { margin-left:8px; color:#8c8b83; font-size:12px; }
+.quick-view-description { color:#73746d; font-size:13px; line-height:1.7; }
+.quick-view-option { margin-top:20px; }
+.quick-view-added { color:#526b55; font-size:12px; margin:10px 0 0; }
+.quick-view-content .detail-note { margin-top:16px; }
+
+@media (max-width:620px) {
+  .quick-view-backdrop { align-items:flex-end; padding:0; }
+  .quick-view-modal {
+    display:block; width:100%; max-height:92dvh; overflow:auto;
+    border-radius:14px 14px 0 0;
+  }
+  .quick-view-image { height:260px; min-height:260px; }
+  .quick-view-image img { height:260px; min-height:260px; }
+  .quick-view-content { padding:25px 22px 30px; }
+  .quick-view-content h2 { font-size:27px; }
+}
+
+/* Customer account */
+.account-page { max-width:1180px; }
+.account-auth { max-width:440px; margin:42px auto 90px; padding:30px; border:1px solid var(--border); background:#fbfaf7; }
+.account-auth-tabs { display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--border); margin-bottom:24px; }
+.account-auth-tabs button { padding:12px; color:#77766f; font-size:12px; border-bottom:2px solid transparent; }
+.account-auth-tabs button.active { color:#252923; border-color:#252923; }
+.account-form { display:grid; gap:16px; }
+.account-form h2 { font:400 21px 'Playfair Display',Georgia,serif; margin:0 0 5px; }
+.account-alert { max-width:900px; margin:18px auto; padding:12px 15px; background:#edf1e9; color:#40533e; font-size:13px; }
+.account-alert.account-error { background:#f8ece8; color:#8b3f32; }
+.account-layout { display:grid; grid-template-columns:minmax(280px,.85fr) minmax(0,1.4fr); gap:60px; margin:38px auto 90px; }
+.account-profile, .account-orders { min-width:0; }
+.account-profile-heading { display:flex; align-items:center; gap:15px; padding-bottom:22px; border-bottom:1px solid var(--border); margin-bottom:20px; }
+.account-avatar { width:68px; height:68px; display:grid; place-items:center; overflow:hidden; border-radius:50%; background:#e9e5dc; color:#66685f; }
+.account-avatar img { width:100%; height:100%; object-fit:cover; }
+.account-profile-heading h2 { margin:0 0 5px; font:400 21px 'Playfair Display',Georgia,serif; }
+.account-profile-heading p { margin:0; color:#77766f; font-size:12px; }
+.account-upload { display:inline-flex; margin-bottom:25px; font-size:12px; text-decoration:underline; cursor:pointer; }
+.account-upload input { max-width:180px; margin-left:10px; font-size:10px; }
+.account-signout { display:flex; align-items:center; gap:8px; margin-top:22px; color:#77766f; font-size:12px; }
+.account-orders-heading { display:flex; align-items:center; gap:12px; padding-bottom:18px; border-bottom:1px solid var(--border); }
+.account-orders-heading h2 { margin:0; font:400 24px 'Playfair Display',Georgia,serif; }
+.account-no-orders { padding:25px 0; color:#77766f; font-size:13px; }
+.account-order { padding:20px 0; border-bottom:1px solid var(--border); }
+.account-order-top { display:flex; align-items:flex-start; justify-content:space-between; gap:15px; }
+.account-order-top div { display:grid; gap:5px; }
+.account-order-top strong { font-size:13px; }
+.account-order-top span, .account-order-status { color:#77766f; font-size:11px; text-transform:capitalize; }
+.account-order-status { display:inline-block; margin-top:10px; padding:5px 9px; background:#eeeee8; }
+.account-order-items { margin-top:12px; color:#66675f; font-size:12px; line-height:1.6; }
+.account-order-items p { margin:4px 0; }
+
+@media (max-width:760px) {
+  .account-layout { grid-template-columns:1fr; gap:42px; }
+  .account-auth { margin:28px auto 60px; padding:22px; }
+}
