@@ -45,6 +45,18 @@ export async function POST(request: Request) {
       auth: { persistSession: false, autoRefreshToken: false },
       global: { headers: { Authorization: authorization } },
     })
+    const { data: authData, error: authError } = await accountClient.auth.getUser(token)
+    if (authError || !authData.user) return NextResponse.json({ error: 'Please sign in again before placing your order.' }, { status: 401 })
+    const { error: profileError } = await accountClient.from('customer_profiles').update({
+      full_name: String(customer.name).trim(),
+      phone: String(customer.phone).replace(/\\D/g, '').slice(-10),
+      address: String(customer.address).trim(),
+      city: String(customer.city).trim(),
+      state: String(customer.state).trim(),
+      postal_code: String(customer.postal).trim(),
+      updated_at: new Date().toISOString(),
+    }).eq('user_id', authData.user.id)
+    if (profileError) return NextResponse.json({ error: 'Please complete your saved profile details before placing the order.' }, { status: 400 })
     const result = await accountClient.rpc('create_account_order', { p_items: [...normalized.values()] })
     data = result.data
     error = result.error
