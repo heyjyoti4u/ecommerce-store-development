@@ -12,6 +12,14 @@ type Order = { id: string; order_number: string; total: number; status: string; 
 
 const blank = { full_name: '', phone: '', address: '', city: '', state: '', postal_code: '' }
 
+const orderStatusLabels: Record<string, string> = {
+  confirmed: 'Order confirmed',
+  processing: 'Being prepared',
+  shipped: 'Shipped',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+}
+
 export default function AccountPage() {
   const [user, setUser] = useState<{ id: string; email: string } | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -246,7 +254,7 @@ export default function AccountPage() {
         <div className="account-orders-heading"><Package size={20} /><h2>Order history</h2></div>
         {!orders.length ? <div className="account-no-orders"><p>Your past orders will appear here.</p><Link className="text-link" href="/products">Explore the collection ↗</Link></div> : orders.map((order) => <article className="account-order" key={order.id}>
           <div className="account-order-top"><div><strong>{order.order_number}</strong><span>{new Date(order.created_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}</span></div><strong>{formatPrice(Number(order.total))}</strong></div>
-          <span className="account-order-status">{order.status} · {order.payment_status}</span>
+          <span className="account-order-status">{orderStatusLabels[order.status] ?? order.status} · Payment: {order.payment_status}</span>
           <div className="account-order-items">{(order.order_items ?? []).map((item, index) => <p key={index}>{item.product_name} · {item.color} / {item.size} × {item.quantity}</p>)}</div>
         </article>)}
       </section>
