@@ -4,8 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 export const runtime = 'nodejs'
 
 export async function POST(request: Request) {
-  const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
+  const url = process.env.ECOMMERCE_STORE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_ECOMMERCE_STORE_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.ECOMMERCE_STORE_SUPABASE_SECRET_KEY ?? process.env.ECOMMERCE_STORE_SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return NextResponse.json({ error: 'Supabase is not connected to this deployment yet.' }, { status: 503 })
 
   let payload: unknown
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   let error: { message: string } | null = null
 
   if (authorization?.startsWith('Bearer ')) {
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY
+    const anonKey = process.env.NEXT_PUBLIC_ECOMMERCE_STORE_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY
     if (!anonKey) return NextResponse.json({ error: 'Supabase anon key is missing for account checkout.' }, { status: 503 })
     const token = authorization.slice(7)
     const accountClient = createClient(url, anonKey, {
