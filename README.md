@@ -4,14 +4,15 @@
 
 1. Open the Supabase project used by the Vercel deployment.
 2. Run `supabase/setup.sql` once if the base storefront schema has not already been installed. It creates the products, customer_profiles, orders and order_items tables and the guest checkout RPC.
-3. Run `supabase/customer-accounts.sql` in the same project's SQL Editor. This adds Supabase Auth profile linking, profile row-level security, avatar storage policies and the authenticated order RPC.
-4. In Supabase Authentication settings, configure the Site URL and redirect URLs for the local app and the production Vercel domain. Enable email/password sign-in.
-5. In Vercel Project Settings → Environment Variables, set:
+3. Run `supabase/customer-accounts.sql` in the same project's SQL Editor.
+4. Run `supabase/production-option-validation.sql` in the same project's SQL Editor. This keeps non-empty size/colour choices validated while allowing products whose option arrays are intentionally empty. This adds Supabase Auth profile linking, profile row-level security, avatar storage policies and the authenticated order RPC.
+5. In Supabase Authentication settings, configure the Site URL and redirect URLs for the local app and the production Vercel domain. Enable email/password sign-in.
+6. In Vercel Project Settings → Environment Variables, set:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_URL`
    - `SUPABASE_SECRET_KEY` (server-only service/secret key; never expose it with a NEXT_PUBLIC_ prefix)
-6. Redeploy after changing environment variables.
+7. Redeploy after changing environment variables.
 
 The existing guest checkout continues to use the server-only secret key and `create_guest_order`. Signed-in checkout sends the user's Supabase access token and uses `create_account_order`, so those orders are linked to the signed-in customer's profile. Customer profile and order-history reads are protected by RLS.
 
