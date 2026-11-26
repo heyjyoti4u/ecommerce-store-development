@@ -18,7 +18,6 @@ export default function CheckoutPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return
     let active = true
     void import('@/lib/supabase/client').then(async ({ getSupabaseBrowserClient }) => {
       const supabase = getSupabaseBrowserClient()
@@ -46,10 +45,12 @@ export default function CheckoutPage() {
     setSaving(true)
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      try {
         const { getSupabaseBrowserClient } = await import('@/lib/supabase/client')
         const { data: { session } } = await getSupabaseBrowserClient().auth.getSession()
         if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`
+      } catch {
+        // Guest checkout can still be handled by the server-side order endpoint.
       }
       const response = await fetch('/api/orders', {
         method: 'POST', headers,
