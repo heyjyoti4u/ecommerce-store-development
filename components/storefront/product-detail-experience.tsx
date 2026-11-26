@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ShoppingBag } from 'lucide-react'
 import type { Product } from '@/lib/store-products'
 import { formatPrice, getProductImages } from '@/lib/store-products'
@@ -23,7 +23,13 @@ export default function ProductDetailExperience({ product }: { product: Product 
   const hasColors = product.colors.length > 0
   const hasSizes = product.sizes.length > 0
   const canAddToBag = (!hasColors || Boolean(color)) && (!hasSizes || Boolean(size))
-  const imageIndex = Math.min(activeImage, images.length - 1)
+  const imageIndex = Math.min(activeImage, Math.max(images.length - 1, 0))
+
+  useEffect(() => {
+    setColor(product.colors[0] ?? '')
+    setSize(product.sizes[0] ?? '')
+    setActiveImage(0)
+  }, [product.id, product.colors, product.sizes])
 
   function selectColor(value: string) {
     setColor(value)
@@ -32,12 +38,12 @@ export default function ProductDetailExperience({ product }: { product: Product 
 
   return <div className="product-detail-layout">
     <div className="detail-gallery">
-      <div className="product-detail-image"><img src={images[imageIndex] ?? product.image} alt={`${product.name} in ${color}`} /></div>
+      <div className="product-detail-image"><img src={images[imageIndex] ?? product.image} alt={product.alt || product.name} /></div>
       {images.length > 1 && <div className="detail-thumbnails" role="group" aria-label="Product photos">
         {images.map((image, index) => <button type="button" key={`${image}-${index}`} className={`detail-thumbnail ${imageIndex === index ? 'is-active' : ''}`} aria-label={`View product photo ${index + 1}`} aria-pressed={imageIndex === index} onClick={() => setActiveImage(index)}><img src={image} alt="" /></button>)}
       </div>}
     </div>
-    <section className="product-detail-copy"><span className="section-kicker">{product.category} · ORO everyday</span><h1>{product.name}</h1><p className="detail-price">{formatPrice(product.price)}{product.oldPrice && <s>{formatPrice(product.oldPrice)}</s>}</p><p className="detail-description">{product.description}</p><p className="detail-note">Thoughtfully made, easy to wear, and ready to make a regular appearance.</p><div className="product-options">
+    <section className="product-detail-copy"><span className="section-kicker">{product.category} · ORO everyday</span><h1>{product.name}</h1><p className="detail-price">{formatPrice(product.price)}{product.oldPrice && <s>{formatPrice(product.oldPrice)}</s>}</p><p className="detail-description">{product.description}</p>{product.badge && <p className="detail-note">{product.badge}</p>}<div className="product-options">
       {product.colors.length > 0 && <>
         <span className="option-label">Colour · {color || 'Choose a colour'}</span>
         <div className="option-row" role="group" aria-label="Choose a colour">
