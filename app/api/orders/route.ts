@@ -4,6 +4,22 @@ import { createClient } from '@supabase/supabase-js'
 export const runtime = 'nodejs'
 
 export async function POST(request: Request) {
+  const origin = request.headers.get('origin')
+  const host = request.headers.get('host')
+  if (origin && host) {
+    try {
+      if (new URL(origin).host !== host) {
+        return NextResponse.json({ error: 'Invalid checkout origin.' }, { status: 403 })
+      }
+    } catch {
+      return NextResponse.json({ error: 'Invalid checkout origin.' }, { status: 403 })
+    }
+  }
+  const contentLength = Number(request.headers.get('content-length') ?? 0)
+  if (contentLength > 64 * 1024) {
+    return NextResponse.json({ error: 'Checkout request is too large.' }, { status: 413 })
+  }
+
   const url = process.env.ECOMMERCE_STORE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_ECOMMERCE_STORE_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.ECOMMERCE_STORE_SUPABASE_SECRET_KEY ?? process.env.ECOMMERCE_STORE_SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return NextResponse.json({ error: 'Supabase is not connected to this deployment yet.' }, { status: 503 })
