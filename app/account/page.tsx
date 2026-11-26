@@ -46,19 +46,26 @@ export default function AccountPage() {
 
   useEffect(() => {
     let alive = true
-    const supabase = getSupabaseBrowserClient()
-    supabase.auth.getSession().then(({ data }) => {
-      if (alive) {
-        if (data.session) void loadAccount()
-        else setBusy(false)
-      }
-    }).catch((cause) => { if (alive) { setError(cause instanceof Error ? cause.message : 'Could not load account.'); setBusy(false) } })
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!alive) return
-      if (session) { setBusy(true); window.setTimeout(() => { if (alive) void loadAccount() }, 0) }
-      else { setUser(null); setProfile(null); setOrders([]); setBusy(false) }
-    })
-    return () => { alive = false; listener.subscription.unsubscribe() }
+    let unsubscribe = () => {}
+    try {
+      const supabase = getSupabaseBrowserClient()
+      supabase.auth.getSession().then(({ data }) => {
+        if (alive) {
+          if (data.session) void loadAccount()
+          else setBusy(false)
+        }
+      }).catch((cause) => { if (alive) { setError(cause instanceof Error ? cause.message : 'Could not load account.'); setBusy(false) } })
+      const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!alive) return
+        if (session) { setBusy(true); window.setTimeout(() => { if (alive) void loadAccount() }, 0) }
+        else { setUser(null); setProfile(null); setOrders([]); setBusy(false) }
+      })
+      unsubscribe = () => listener.subscription.unsubscribe()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Supabase is not configured for customer accounts.')
+      setBusy(false)
+    }
+    return () => { alive = false; unsubscribe() }
   }, [])
 
   async function authenticate(event: FormEvent<HTMLFormElement>) {
