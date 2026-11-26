@@ -17,6 +17,7 @@ export default function AccountPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [form, setForm] = useState(blank)
   const [orders, setOrders] = useState<Order[]>([])
+  const [isAdmin, setIsAdmin] = useState(false)
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -30,9 +31,10 @@ export default function AccountPage() {
     const { data: { user: current } } = await supabase.auth.getUser()
     if (!current) { setUser(null); setProfile(null); setOrders([]); setBusy(false); return }
     setUser({ id: current.id, email: current.email ?? '' })
-    const [{ data: profileRow, error: profileError }, { data: orderRows, error: orderError }] = await Promise.all([
+    const [{ data: profileRow, error: profileError }, { data: orderRows, error: orderError }, { data: adminRow }] = await Promise.all([
       supabase.from('customer_profiles').select('*').eq('user_id', current.id).maybeSingle(),
       supabase.from('orders').select('id,order_number,total,status,payment_status,created_at,order_items(product_name,unit_price,size,color,quantity,line_total)').order('created_at', { ascending: false }),
+      supabase.from('admin_users').select('user_id').eq('user_id', current.id).maybeSingle(),
     ])
     if (profileError) setError(profileError.message)
     if (orderError) setError(orderError.message)
@@ -41,6 +43,7 @@ export default function AccountPage() {
       setForm({ full_name: profileRow.full_name ?? '', phone: profileRow.phone ?? '', address: profileRow.address ?? '', city: profileRow.city ?? '', state: profileRow.state ?? '', postal_code: profileRow.postal_code ?? '' })
     }
     setOrders((orderRows ?? []) as unknown as Order[])
+    setIsAdmin(Boolean(adminRow))
     setBusy(false)
   }
 
@@ -58,7 +61,7 @@ export default function AccountPage() {
       const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
         if (!alive) return
         if (session) { setBusy(true); window.setTimeout(() => { if (alive) void loadAccount() }, 0) }
-        else { setUser(null); setProfile(null); setOrders([]); setBusy(false) }
+        else { setUser(null); setProfile(null); setOrders([]); setIsAdmin(false); setBusy(false) }
       })
       unsubscribe = () => listener.subscription.unsubscribe()
     } catch (cause) {
@@ -148,6 +151,7 @@ export default function AccountPage() {
           {([['full_name','Full name','name'],['phone','Mobile number','tel'],['address','Street address','street-address'],['city','City','address-level2'],['state','State','address-level1'],['postal_code','PIN code','postal-code']] as const).map(([key,label,autocomplete]) => <label className="form-field" key={key}>{label}<input required autoComplete={autocomplete} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} /></label>)}
           <button className="button-dark full-width" disabled={saving}>{saving ? 'Saving…' : 'Save details'}</button>
         </form>
+        {isAdmin && <Link className="account-signout" href="/admin">Open admin dashboard →</Link>}
         <button className="account-signout" type="button" onClick={() => void signOut()}><LogOut size={15} /> Sign out</button>
       </section>
       <section className="account-orders">
