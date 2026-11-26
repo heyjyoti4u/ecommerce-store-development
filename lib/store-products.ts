@@ -5,6 +5,7 @@ export type Product = {
   price: number
   oldPrice?: number
   image: string
+  hoverImage?: string
   alt: string
   description: string
   sizes: string[]
@@ -15,22 +16,22 @@ export type Product = {
 export const products: Product[] = [
   {
     id: 'linen-day-dress', name: 'The Linen Day Dress', category: 'Clothing', price: 4290, oldPrice: 5490,
-    image: '/product-linen-dress.png', alt: 'Ivory linen dress on a sunlit studio model',
+    image: '/product-linen-dress.png', hoverImage: '/product-linen-dress-alt.png', alt: 'Ivory linen dress on a sunlit studio model',
     description: 'A softly structured, breathable linen dress made for long lunches and the in-between hours. Finished with an easy waist and deep pockets.', sizes: ['XS', 'S', 'M', 'L', 'XL'], colors: ['Oat', 'Ink'], badge: 'Bestseller',
   },
   {
     id: 'everyday-carryall', name: 'The Everyday Carryall', category: 'Bags', price: 3890, oldPrice: 4500,
-    image: '/product-carryall.png', alt: 'Soft tan leather everyday carryall bag',
+    image: '/product-carryall.png', hoverImage: '/product-carryall-alt.png', alt: 'Soft tan leather everyday carryall bag',
     description: 'Your considered everyday companion. A roomy, softly structured carryall with an interior pocket and adjustable strap.', sizes: ['One size'], colors: ['Cognac', 'Black'], badge: 'Just landed',
   },
   {
     id: 'soft-structure-shirt', name: 'Soft Structure Shirt', category: 'Clothing', price: 2990, oldPrice: 3600,
-    image: '/product-poplin-shirt.png', alt: 'Relaxed white cotton shirt with a soft drape',
+    image: '/product-poplin-shirt.png', hoverImage: '/product-poplin-shirt-alt.png', alt: 'Relaxed white cotton shirt with a soft drape',
     description: 'An easy, oversized cotton poplin shirt with a curved hem and just-right drape. Wear it tucked, open, or on its own.', sizes: ['XS', 'S', 'M', 'L', 'XL'], colors: ['Cloud', 'Sage'],
   },
   {
     id: 'sculpted-hoops', name: 'Sculpted Hoops', category: 'Accessories', price: 1490, oldPrice: 1890,
-    image: '/product-gold-hoops.png', alt: 'Sculptural gold hoops styled with a clean neutral look',
+    image: '/product-gold-hoops.png', hoverImage: '/product-gold-hoops-alt.png', alt: 'Sculptural gold hoops styled with a clean neutral look',
     description: 'Sculptural, lightweight hoops with a polished finish. The small detail that makes every day feel a little more put together.', sizes: ['One size'], colors: ['Gold', 'Silver'], badge: 'A little extra',
   },
   {

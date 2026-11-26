@@ -15,7 +15,7 @@ export async function getCatalog(): Promise<Product[]> {
   if (error || !data?.length) return demoProducts
   return data.map((row) => ({
     id: row.id, name: row.name, category: row.category, price: Number(row.price), oldPrice: row.old_price ? Number(row.old_price) : undefined,
-    image: row.image, alt: row.alt, description: row.description, sizes: row.sizes ?? ['One size'], colors: row.colors ?? ['Natural'], badge: row.badge ?? undefined,
+    image: row.image, hoverImage: demoProducts.find((product) => product.id === row.id)?.hoverImage, alt: row.alt, description: row.description, sizes: row.sizes ?? ['One size'], colors: row.colors ?? ['Natural'], badge: row.badge ?? undefined,
   })) as Product[]
 }
 
