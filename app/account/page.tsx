@@ -144,7 +144,7 @@ export default function AccountPage() {
     setSaving(true); setError(''); setMessage('')
     try {
       const supabase = getSupabaseBrowserClient()
-      const { data, error: saveError } = await supabase.from('customer_profiles').update({ ...form, email: user.email, updated_at: new Date().toISOString() }).eq('user_id', user.id).select('*').single()
+      const { data, error: saveError } = await supabase.from('customer_profiles').upsert({ user_id: user.id, email: user.email.toLowerCase(), ...form, updated_at: new Date().toISOString() }, { onConflict: 'user_id' }).select('*').single()
       if (saveError) throw saveError
       setProfile(data as Profile); setMessage('Profile saved successfully.')
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not save profile.') }
