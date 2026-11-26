@@ -23,8 +23,14 @@ export default function CheckoutPage() {
     setError('')
     setSaving(true)
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        const { getSupabaseBrowserClient } = await import('@/lib/supabase/client')
+        const { data: { session } } = await getSupabaseBrowserClient().auth.getSession()
+        if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`
+      }
       const response = await fetch('/api/orders', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers,
         body: JSON.stringify({ customer: form, items: items.map(({ product, size, color, quantity }) => ({ product_id: product.id, size, color, quantity })) }),
       })
       const result = await response.json()
