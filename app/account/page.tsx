@@ -135,10 +135,10 @@ export default function AccountPage() {
       <form className="account-form" onSubmit={authenticate}>
         {mode === 'signup' && <label className="form-field">Full name<input required autoComplete="name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></label>}
         <label className="form-field">Email address<input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
-        <label className="form-field">Password<input type="password" required minLength={8} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} /></label>
+        <label className="form-field">Password<input type="password" required minLength={6} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} /></label>
         <button className="button-dark full-width" disabled={saving}>{saving ? 'Please wait…' : mode === 'signup' ? 'Create account' : 'Sign in'}</button>
       </form>
-      <p className="detail-note">Use at least 8 characters for your password. Email verification may be required.</p>
+      <p className="detail-note">Use at least 6 characters for your password. Email verification may be required.</p>
     </section> : <div className="account-layout">
       <section className="account-profile">
         <div className="account-profile-heading">
@@ -151,7 +151,7 @@ export default function AccountPage() {
           {([['full_name','Full name','name'],['phone','Mobile number','tel'],['address','Street address','street-address'],['city','City','address-level2'],['state','State','address-level1'],['postal_code','PIN code','postal-code']] as const).map(([key,label,autocomplete]) => <label className="form-field" key={key}>{label}<input required autoComplete={autocomplete} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} /></label>)}
           <button className="button-dark full-width" disabled={saving}>{saving ? 'Saving…' : 'Save details'}</button>
         </form>
-        {isAdmin && <Link className="account-signout" href="/admin">Open admin dashboard →</Link>}
+        {isAdmin && <Link className="account-signout" href="/admin/products">Open admin panel →</Link>}
         <button className="account-signout" type="button" onClick={() => void signOut()}><LogOut size={15} /> Sign out</button>
       </section>
       <section className="account-orders">
