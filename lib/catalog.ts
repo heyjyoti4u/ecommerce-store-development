@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { products as demoProducts, type Product } from '@/lib/store-products'
+import type { Product } from '@/lib/store-products'
 
 function getServerSupabase() {
   const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
