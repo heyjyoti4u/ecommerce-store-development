@@ -14,12 +14,15 @@ const swatches: Record<string, string> = {
 }
 
 export default function ProductDetailExperience({ product }: { product: Product }) {
-  const [color, setColor] = useState(product.colors[0] ?? 'Natural')
-  const [size, setSize] = useState(product.sizes[0] ?? 'One size')
+  const [color, setColor] = useState(product.colors[0] ?? '')
+  const [size, setSize] = useState(product.sizes[0] ?? '')
   const [activeImage, setActiveImage] = useState(0)
   const [added, setAdded] = useState(false)
   const { add } = useCart()
   const images = getProductImages(product, color)
+  const hasColors = product.colors.length > 0
+  const hasSizes = product.sizes.length > 0
+  const canAddToBag = (!hasColors || Boolean(color)) && (!hasSizes || Boolean(size))
   const imageIndex = Math.min(activeImage, images.length - 1)
 
   function selectColor(value: string) {
