@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { useEffect, useState, type FormEvent } from 'react'
 import { LogOut, Package, UserRound } from 'lucide-react'
 import StoreHeader from '@/components/store-header'
