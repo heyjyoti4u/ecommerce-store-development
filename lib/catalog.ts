@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { unstable_cache } from 'next/cache'
 import { products as demoProducts, type Product } from '@/lib/store-products'
 
 function getServerSupabase() {
@@ -8,7 +9,7 @@ function getServerSupabase() {
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
 }
 
-export async function getCatalog(): Promise<Product[]> {
+export const getCatalog = unstable_cache(async (): Promise<Product[]> => {
   const supabase = getServerSupabase()
   if (!supabase) return demoProducts
   const withVariants = await supabase.from('products').select('id,name,category,price,image,alt,description,sizes,colors,badge,old_price,variant_images').eq('active', true).order('created_at', { ascending: false })
@@ -23,7 +24,7 @@ export async function getCatalog(): Promise<Product[]> {
       image: row.image, hoverImage: demoProducts.find((product) => product.id === row.id)?.hoverImage, variantImages: variantImages ?? undefined, alt: row.alt, description: row.description, sizes: row.sizes ?? ['One size'], colors: row.colors ?? ['Natural'], badge: row.badge ?? undefined,
     }
   }) as Product[]
-}
+}, ['oro-product-catalog'], { revalidate: 60, tags: ['products'] })
 
 export async function getProduct(slug: string) {
   const catalog = await getCatalog()
