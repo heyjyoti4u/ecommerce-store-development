@@ -6,6 +6,7 @@ import type { Product } from '@/lib/store-products'
 import { formatPrice, getProductImages } from '@/lib/store-products'
 import { useCart } from '@/components/storefront/cart-store'
 import ProductCard from '@/components/storefront/product-card'
+import WishlistButton from '@/components/storefront/wishlist-button'
 
 const swatches: Record<string, string> = {
   oat: '#d8c9ad', ink: '#252722', cognac: '#9b6647', black: '#252722', cloud: '#faf9f4',
@@ -56,7 +57,7 @@ export default function ProductDetailExperience({ product, recommendations }: { 
           {product.sizes.map((value) => <button key={value} className={`option-button ${size === value ? 'selected' : ''}`} type="button" aria-pressed={size === value} onClick={() => setSize(value)}>{value}</button>)}
         </div>
       </>}
-      <button className="button-dark full-width detail-add" type="button" disabled={!canAddToBag} onClick={() => { add(product, size, color); openDrawer() }}><ShoppingBag size={15} /> Add to bag</button>
+      <div className="detail-purchase-actions"><WishlistButton productId={product.id} className="detail-wishlist" /><button className="button-dark full-width detail-add" type="button" disabled={!canAddToBag} onClick={() => { add(product, size, color); openDrawer() }}><ShoppingBag size={15} /> Add to bag</button>
       <p className="detail-note">Free shipping on orders over ₹3,000 · Cash on delivery available</p>
     </div>
     <section className="product-shipping-info" aria-label="Shipping and returns">
