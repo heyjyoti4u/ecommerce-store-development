@@ -57,8 +57,12 @@ export default function ProductDetailExperience({ product, recommendations }: { 
           {product.sizes.map((value) => <button key={value} className={`option-button ${size === value ? 'selected' : ''}`} type="button" aria-pressed={size === value} onClick={() => setSize(value)}>{value}</button>)}
         </div>
       </>}
-      <div className="detail-purchase-actions"><WishlistButton productId={product.id} className="detail-wishlist" /><button className="button-dark full-width detail-add" type="button" disabled={!canAddToBag} onClick={() => { add(product, size, color); openDrawer() }}><ShoppingBag size={15} /> Add to bag</button>
-      <p className="detail-note">Free shipping on orders over ₹3,000 · Cash on delivery available</p>
+      <div className="detail-purchase-actions">
+        <button className="button-dark full-width detail-add" type="button" disabled={!canAddToBag} onClick={() => { add(product, size, color); openDrawer() }}><ShoppingBag size={15} /> Add to bag</button>
+        <div className="detail-secondary-actions">
+          <WishlistButton productId={product.id} className="detail-wishlist" />
+          <p className="detail-note">Free shipping on orders over ₹3,000 · Cash on delivery available</p>
+        </div>
       </div>
     </div>
     <section className="product-shipping-info" aria-label="Shipping and returns">
