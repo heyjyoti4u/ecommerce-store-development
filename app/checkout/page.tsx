@@ -10,7 +10,14 @@ import { useCart } from '@/components/storefront/cart-store'
 import { formatPrice } from '@/lib/store-products'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
+declare global {
+  interface Window {
+    Razorpay?: new (options: Record<string, unknown>) => { open: () => void; on: (event: string, callback: (response: { error?: { description?: string } }) => void) => void }
+  }
+}
+
 type CheckoutFields = { name: string; email: string; phone: string; address: string; city: string; state: string; postal: string }
+type RazorpayCheckoutResponse = { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }
 const emptyForm: CheckoutFields = { name: '', email: '', phone: '', address: '', city: '', state: '', postal: '' }
 const digitsOnly = (value: string) => value.replace(/\D/g, '').slice(-10)
 
@@ -105,8 +112,55 @@ export default function CheckoutPage() {
       const result = await response.json()
       if (!response.ok) throw new Error(result.error ?? 'We could not save your order. Please try again.')
       if (paymentMethod === 'upi') {
-        if (!result.checkoutUrl) throw new Error('Secure UPI checkout is not available right now.')
-        window.location.assign(result.checkoutUrl)
+        if (!result.keyId || !result.razorpayOrderId) throw new Error('Razorpay checkout is not configured. Please try COD or contact support.')
+        const loadRazorpay = () => new Promise<void>((resolve, reject) => {
+          if (window.Razorpay) return resolve()
+          const existing = document.querySelector<HTMLScriptElement>('script[data-razorpay-checkout]')
+          if (existing) {
+            existing.addEventListener('load', () => resolve(), { once: true })
+            existing.addEventListener('error', () => reject(new Error('Could not load Razorpay checkout.')), { once: true })
+            return
+          }
+          const script = document.createElement('script')
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+          script.async = true
+          script.dataset.razorpayCheckout = 'true'
+          script.onload = () => resolve()
+          script.onerror = () => reject(new Error('Could not load Razorpay checkout. Please check your connection.'))
+          document.body.appendChild(script)
+        })
+        await loadRazorpay()
+        if (!window.Razorpay) throw new Error('Razorpay checkout did not initialise.')
+        const checkout = new window.Razorpay({
+          key: result.keyId,
+          order_id: result.razorpayOrderId,
+          amount: result.amount,
+          currency: 'INR',
+          name: 'ORO',
+          description: `Order ${result.orderNumber}`,
+          prefill: result.customer,
+          notes: { order_number: result.orderNumber },
+          theme: { color: '#24382f' },
+          modal: { ondismiss: () => setError('Payment window closed. Your order is still pending; you can retry online payment or choose COD.') },
+          handler: async (payment: RazorpayCheckoutResponse) => {
+            try {
+              const verify = await fetch('/api/checkout/confirm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+                body: JSON.stringify(payment),
+              })
+              const verified = await verify.json()
+              if (!verify.ok || verified.state !== 'paid') throw new Error(verified.error ?? verified.message ?? 'Payment verification is pending. Please check your order status.')
+              idempotencyKey.current = null
+              clear()
+              router.push(`/order-confirmation?order=${encodeURIComponent(verified.orderNumber)}&total=${encodeURIComponent(String(verified.total))}&paid=1`)
+            } catch (cause) {
+              setError(cause instanceof Error ? cause.message : 'Payment was received but could not yet be verified. Please do not pay again; contact support.')
+            }
+          },
+        })
+        checkout.on('payment.failed', (failure) => setError(failure.error?.description ?? 'Payment failed. You can retry or choose cash on delivery.'))
+        checkout.open()
         return
       }
       idempotencyKey.current = null
@@ -130,7 +184,7 @@ export default function CheckoutPage() {
         <div className="checkout-fields">
           {([['name', 'Full name', 'text', 'name'], ['email', 'Email address', 'email', 'email'], ['phone', 'Mobile number', 'tel', 'tel'], ['postal', 'PIN code', 'text', 'postal-code'], ['address', 'Street address', 'text', 'street-address'], ['city', 'City', 'text', 'address-level2'], ['state', 'State', 'text', 'address-level1']] as const).map(([key, label, type, autocomplete]) => <label className={`form-field ${key === 'address' ? 'full' : ''}`} key={key}>{label}<input type={type} autoComplete={autocomplete} inputMode={key === 'postal' || key === 'phone' ? 'numeric' : undefined} required maxLength={key === 'postal' ? 6 : key === 'phone' ? 15 : 240} value={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.value })} readOnly={key === 'email'} /></label>)}
         </div>
-        <section className="payment-section" aria-labelledby="payment-heading"><h2 id="payment-heading">Payment</h2><label className={`payment-choice ${paymentMethod === 'cod' ? 'selected' : ''}`}><input type="radio" name="payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} /> <strong>Cash on delivery</strong><span>Pay in INR when your order arrives</span></label><label className={`payment-choice ${paymentMethod === 'upi' ? 'selected' : ''}`}><input type="radio" name="payment" value="upi" checked={paymentMethod === 'upi'} onChange={() => setPaymentMethod('upi')} /> <strong>UPI / online payment</strong><span className="payment-status">Secure Stripe checkout</span></label>{paymentMethod === 'upi' && <p className="detail-note">UPI payment uses Stripe Checkout. Apply the supplied Supabase order-lifecycle SQL before enabling this payment method in production.</p>}{cancelledOrderId && user && <button className="verification-send" type="button" disabled={releasingCancelledOrder} onClick={() => void releaseCancelledOrder()}>{releasingCancelledOrder ? 'Releasing order…' : 'Release cancelled UPI order'}</button>}</section>
+        <section className="payment-section" aria-labelledby="payment-heading"><h2 id="payment-heading">Payment</h2><label className={`payment-choice ${paymentMethod === 'cod' ? 'selected' : ''}`}><input type="radio" name="payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} /> <strong>Cash on delivery</strong><span>Pay in INR when your order arrives</span></label><label className={`payment-choice ${paymentMethod === 'upi' ? 'selected' : ''}`}><input type="radio" name="payment" value="upi" checked={paymentMethod === 'upi'} onChange={() => setPaymentMethod('upi')} /> <strong>UPI / online payment</strong><span className="payment-status">Secure Razorpay checkout</span></label>{paymentMethod === 'upi' && <p className="detail-note">Pay securely using Razorpay. UPI, cards and netbanking availability depends on your Razorpay account settings.</p>}{cancelledOrderId && user && <button className="verification-send" type="button" disabled={releasingCancelledOrder} onClick={() => void releaseCancelledOrder()}>{releasingCancelledOrder ? 'Releasing order…' : 'Release cancelled UPI order'}</button>}</section>
         {error && <p className="checkout-error" role="alert">{error}</p>}
         <button className="button-dark full-width checkout-submit" type="submit" disabled={saving}>{saving ? 'Placing your order…' : `Place order · ${formatPrice(subtotal + shipping)}`}</button>
         <p className="checkout-note">By placing your order, you agree to our terms and privacy policy.</p>
