@@ -25,26 +25,27 @@ export async function POST(request: Request) {
   if (authError || !authData.user || !authData.user.email_confirmed_at) return NextResponse.json({ error: 'Please sign in again to verify this payment.' }, { status: 401 })
 
   try {
+    const service = getSupabaseServiceClient()
+    const { data: attempt, error: attemptError } = await service.from('order_payment_attempts')
+      .select('id,order_id,razorpay_order_id').eq('razorpay_order_id', razorpay_order_id).maybeSingle()
+    if (attemptError || !attempt || attempt.razorpay_order_id !== razorpay_order_id) return NextResponse.json({ error: 'Payment attempt was not found.' }, { status: 404 })
+    const { data: order, error: orderError } = await service.from('orders')
+      .select('id,order_number,total,customer_id,payment_status,razorpay_order_id')
+      .eq('id', attempt.order_id).maybeSingle()
+    if (orderError || !order || order.razorpay_order_id !== razorpay_order_id) return NextResponse.json({ error: 'Order was not found.' }, { status: 404 })
+    const { data: profile } = await service.from('customer_profiles').select('id').eq('user_id', authData.user.id).maybeSingle()
+    if (!profile || profile.id !== order.customer_id) return NextResponse.json({ error: 'This payment does not belong to your account.' }, { status: 403 })
+
+    // Verify against the Razorpay order ID stored by our server, not a client-supplied value.
     const secret = process.env.RAZORPAY_KEY_SECRET
     if (!secret) throw new Error('Razorpay is not configured.')
-    const expected = createHmac('sha256', secret).update(`${razorpay_order_id}|${razorpay_payment_id}`).digest()
+    const expected = createHmac('sha256', secret).update(`${order.razorpay_order_id}|${razorpay_payment_id}`).digest()
     const received = Buffer.from(razorpay_signature, 'hex')
     if (received.length !== expected.length || !timingSafeEqual(expected, received)) return NextResponse.json({ error: 'Payment signature could not be verified.' }, { status: 400 })
 
     const payment = await razorpayRequest<{ id: string; order_id: string; amount: number; currency: string; status: string }>(`payments/${razorpay_payment_id}`)
-    if (payment.order_id !== razorpay_order_id || payment.currency !== 'INR') return NextResponse.json({ error: 'Payment does not match this order.' }, { status: 409 })
+    if (payment.order_id !== order.razorpay_order_id || payment.currency !== 'INR') return NextResponse.json({ error: 'Payment does not match this order.' }, { status: 409 })
     if (payment.status !== 'captured') return NextResponse.json({ state: 'pending', message: 'Your payment is not captured yet. Please check again shortly.' }, { status: 202 })
-
-    const service = getSupabaseServiceClient()
-    const { data: attempt, error: attemptError } = await service.from('order_payment_attempts')
-      .select('id,order_id').eq('razorpay_order_id', razorpay_order_id).maybeSingle()
-    if (attemptError || !attempt) return NextResponse.json({ error: 'Payment attempt was not found.' }, { status: 404 })
-    const { data: order, error: orderError } = await service.from('orders')
-      .select('id,order_number,total,customer_id,payment_status')
-      .eq('id', attempt.order_id).maybeSingle()
-    if (orderError || !order) return NextResponse.json({ error: 'Order was not found.' }, { status: 404 })
-    const { data: profile } = await service.from('customer_profiles').select('id').eq('user_id', authData.user.id).maybeSingle()
-    if (!profile || profile.id !== order.customer_id) return NextResponse.json({ error: 'This payment does not belong to your account.' }, { status: 403 })
     if (payment.amount !== Math.round(Number(order.total) * 100)) return NextResponse.json({ error: 'Payment amount does not match the order total.' }, { status: 409 })
 
     const { data, error } = await service.rpc('confirm_account_payment', {
