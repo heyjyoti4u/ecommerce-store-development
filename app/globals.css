@@ -1464,3 +1464,40 @@ a { color: inherit; text-decoration: none; }
   .detail-purchase-actions .detail-wishlist { flex-basis: 44px; width: 44px; height: 44px; }
   .detail-secondary-actions .detail-note { font-size: 9px; }
 }
+
+
+/* Full-width wishlist bar beneath the add-to-bag CTA */
+.detail-purchase-actions .detail-wishlist-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  flex: none;
+  width: 100%;
+  min-height: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 0;
+  background: #242424;
+  color: #fff;
+}
+.detail-purchase-actions .detail-wishlist-bar::after {
+  content: "Add to wishlist";
+  font: inherit;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+.detail-purchase-actions .detail-wishlist-bar.is-saved {
+  background: #26372e;
+  color: #fff;
+}
+.detail-purchase-actions > .detail-note {
+  margin: 0;
+  color: #77786f;
+  font-size: 10px;
+  line-height: 1.65;
+}
+@media (max-width: 640px) {
+  .detail-purchase-actions .detail-wishlist-bar { min-height: 48px; height: 48px; width: 100%; }
+  .detail-purchase-actions > .detail-note { font-size: 9px; }
+}
