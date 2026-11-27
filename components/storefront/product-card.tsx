@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react'
 import type { Product } from '@/lib/store-products'
 import { formatPrice, getProductImages } from '@/lib/store-products'
 import ProductQuickView from '@/components/storefront/product-quick-view'
+import WishlistButton from '@/components/storefront/wishlist-button'
 
 const colorSwatches: Record<string, string> = {
   oat: '#d8c9ad', ink: '#252722', cognac: '#9b6647', black: '#252722', cloud: '#faf9f4',
@@ -25,6 +26,7 @@ export default function ProductCard({ product }: { product: Product }) {
           {product.badge && <span className="product-badge">{product.badge}</span>}
           <img className="product-image-primary" src={images[0] ?? product.image} alt={`${product.name} in ${color}`} loading="lazy" decoding="async" />
         </Link>
+        <WishlistButton productId={product.id} className="product-wishlist" />
         <button className="product-add" type="button" onClick={() => setQuickView(true)} aria-label={`Choose options for ${product.name}`}><Plus size={17} /></button>
       </div>
       <div className="product-info">
