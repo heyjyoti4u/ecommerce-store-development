@@ -1420,3 +1420,47 @@ a { color: inherit; text-decoration: none; }
   .oro-header .header-actions .bag-link { gap: 4px; }
   .oro-header .header-actions .bag-count { min-width: 17px; height: 17px; font-size: 8px; }
 }
+
+
+/* Product detail purchase actions: primary CTA above secondary actions */
+.detail-purchase-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+  margin-top: 22px;
+}
+.detail-purchase-actions .detail-add {
+  order: 0;
+  flex: none;
+  width: 100%;
+  min-height: 52px;
+  margin: 0;
+}
+.detail-secondary-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+.detail-purchase-actions .detail-wishlist {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+}
+.detail-secondary-actions .detail-note {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: #77786f;
+  font-size: 10px;
+  line-height: 1.65;
+}
+@media (max-width: 640px) {
+  .detail-purchase-actions { gap: 10px; margin-top: 18px; }
+  .detail-purchase-actions .detail-add { min-height: 50px; }
+  .detail-secondary-actions { gap: 12px; }
+  .detail-purchase-actions .detail-wishlist { flex-basis: 44px; width: 44px; height: 44px; }
+  .detail-secondary-actions .detail-note { font-size: 9px; }
+}
