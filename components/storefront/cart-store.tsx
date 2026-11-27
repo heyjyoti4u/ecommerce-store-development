@@ -90,6 +90,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     drawerOpen,
     add(product, size, color, quantity = 1) {
       const addition = { product, size, color, quantity }
+      if (maxAllowed(product, size, color) === 0) { if (typeof window !== 'undefined') window.alert('This variant is currently out of stock.'); return }
       if (!hydrated) {
         pendingAdds.current.push(addition)
         return
