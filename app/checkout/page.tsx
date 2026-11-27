@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, ShieldCheck } from 'lucide-react'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { User } from '@supabase/supabase-js'
 import StoreHeader from '@/components/store-header'
 import { useCart } from '@/components/storefront/cart-store'
@@ -26,6 +26,10 @@ export default function CheckoutPage() {
   const [pendingPhone, setPendingPhone] = useState('')
   const [otp, setOtp] = useState('')
   const [phoneVerified, setPhoneVerified] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'upi'>('cod')
+  const [cancelledOrderId, setCancelledOrderId] = useState('')
+  const [releasingCancelledOrder, setReleasingCancelledOrder] = useState(false)
+  const idempotencyKey = useRef<{ method: 'cod' | 'upi'; key: string } | null>(null)
 
   useEffect(() => {
     let active = true
@@ -35,6 +39,13 @@ export default function CheckoutPage() {
         const { data: { user: currentUser } } = await supabase.auth.getUser()
         if (!active) return
         setUser(currentUser)
+        const paymentWasCancelled = new URLSearchParams(window.location.search).get('payment') === 'cancelled'
+        const cancelledOrder = new URLSearchParams(window.location.search).get('order')
+        if (paymentWasCancelled) {
+          setPaymentMethod('upi')
+          setCancelledOrderId(cancelledOrder ?? '')
+          setError('Your UPI payment was not completed. Your bag is still saved; release the pending order before retrying.')
+        }
         if (!currentUser) return
         const { data } = await supabase.from('customer_profiles').select('full_name,phone,address,city,state,postal_code,email').eq('user_id', currentUser.id).maybeSingle()
         if (!active) return
@@ -91,6 +102,28 @@ export default function CheckoutPage() {
     }
   }
 
+  async function releaseCancelledOrder() {
+    if (!user || !cancelledOrderId || releasingCancelledOrder) return
+    setReleasingCancelledOrder(true)
+    try {
+      const { data: { session } } = await getSupabaseBrowserClient().auth.getSession()
+      if (!session?.access_token) throw new Error('Sign in again to release the pending order.')
+      const response = await fetch('/api/orders/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ orderId: cancelledOrderId, reason: 'UPI checkout was cancelled' }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error ?? 'Could not release the pending order.')
+      setCancelledOrderId('')
+      setError('Pending UPI order released. Your bag is saved; you can retry UPI or choose cash on delivery.')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not release the pending order.')
+    } finally {
+      setReleasingCancelledOrder(false)
+    }
+  }
+
   async function placeOrder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!items.length || saving) return
@@ -100,14 +133,28 @@ export default function CheckoutPage() {
     setSaving(true)
     try {
       const { data: { session } } = await getSupabaseBrowserClient().auth.getSession()
-      if (!session?.access_token) throw new Error('Please sign in again before placing your order.')
+      if (!session?.access_token) throw new Error('Please sign in again before placing the order.')
+      if (!idempotencyKey.current || idempotencyKey.current.method !== paymentMethod) {
+        idempotencyKey.current = { method: paymentMethod, key: crypto.randomUUID() }
+      }
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ customer: form, items: items.map(({ product, size, color, quantity }) => ({ product_id: product.id, size, color, quantity })) }),
+        body: JSON.stringify({
+          customer: form,
+          paymentMethod,
+          idempotencyKey: idempotencyKey.current.key,
+          items: items.map(({ product, size, color, quantity }) => ({ product_id: product.id, size, color, quantity })),
+        }),
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error ?? 'We could not save your order. Please try again.')
+      if (paymentMethod === 'upi') {
+        if (!result.checkoutUrl) throw new Error('Secure UPI checkout is not available right now.')
+        window.location.assign(result.checkoutUrl)
+        return
+      }
+      idempotencyKey.current = null
       clear()
       router.push(`/order-confirmation?order=${encodeURIComponent(result.orderNumber)}&total=${encodeURIComponent(String(result.total))}`)
     } catch (cause) {
@@ -130,7 +177,7 @@ export default function CheckoutPage() {
         </div>
         {!phoneVerified && <div className="phone-verification-panel"><p>We’ll send a one-time code through the phone provider configured for this store. SMS is the usual channel; WhatsApp works only if the provider is configured for it.</p>{pendingPhone ? <div className="otp-entry"><label className="form-field">6-digit confirmation code<input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} /></label><button className="button-dark" type="button" disabled={saving || otp.length !== 6} onClick={() => void verifyPhoneCode()}>{saving ? 'Checking…' : 'Verify number'}</button><button className="verification-send" type="button" disabled={sendingCode} onClick={() => void sendPhoneCode()}>{sendingCode ? 'Sending…' : 'Resend code'}</button></div> : <button className="verification-send" type="button" disabled={sendingCode || digitsOnly(form.phone).length !== 10} onClick={() => void sendPhoneCode()}>{sendingCode ? 'Sending code…' : 'Send confirmation code'}</button>}</div>}
         {phoneVerified && <p className="phone-confirmed-note"><CheckCircle2 size={15} /> This mobile number is confirmed.</p>}
-        <section className="payment-section" aria-labelledby="payment-heading"><h2 id="payment-heading">Payment</h2><label className="payment-choice selected"><input type="radio" name="payment" checked readOnly /> <strong>Cash on delivery</strong><span>Pay in INR when your order arrives</span></label><label className="payment-choice payment-choice-unavailable"><input type="radio" name="payment" disabled /> <strong>UPI / online payment</strong><span className="payment-status">Coming soon</span></label><p className="detail-note">UPI is not available for payment yet. Online payment processing and order recording have not been enabled.</p></section>
+        <section className="payment-section" aria-labelledby="payment-heading"><h2 id="payment-heading">Payment</h2><label className={`payment-choice ${paymentMethod === 'cod' ? 'selected' : ''}`}><input type="radio" name="payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} /> <strong>Cash on delivery</strong><span>Pay in INR when your order arrives</span></label><label className={`payment-choice ${paymentMethod === 'upi' ? 'selected' : ''}`}><input type="radio" name="payment" value="upi" checked={paymentMethod === 'upi'} onChange={() => setPaymentMethod('upi')} /> <strong>UPI / online payment</strong><span className="payment-status">Secure Stripe checkout</span></label>{paymentMethod === 'upi' && <p className="detail-note">UPI payment uses Stripe Checkout. Apply the supplied Supabase order-lifecycle SQL before enabling this payment method in production.</p>}{cancelledOrderId && user && <button className="verification-send" type="button" disabled={releasingCancelledOrder} onClick={() => void releaseCancelledOrder()}>{releasingCancelledOrder ? 'Releasing order…' : 'Release cancelled UPI order'}</button>}</section>
         {error && <p className="checkout-error" role="alert">{error}</p>}
         <button className="button-dark full-width checkout-submit" type="submit" disabled={saving || !phoneVerified}>{saving ? 'Placing your order…' : `Place order · ${formatPrice(subtotal + shipping)}`}</button>
         <p className="checkout-note">By placing your order, you agree to our terms and privacy policy.</p>

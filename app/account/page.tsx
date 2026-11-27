@@ -8,7 +8,8 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/store-products'
 
 type Profile = { id: string; user_id: string; email: string; full_name: string; phone: string; address: string; city: string; state: string; postal_code: string; avatar_url: string | null }
-type Order = { id: string; order_number: string; total: number; status: string; payment_status: string; created_at: string; order_items: { product_name: string; unit_price: number; size: string; color: string; quantity: number; line_total: number }[] }
+type OrderEvent = { id: number; old_status: string | null; new_status: string; note: string | null; created_at: string }
+type Order = { id: string; order_number: string; total: number; status: string; payment_status: string; payment_method: string; tracking_number: string | null; courier_partner: string | null; cod_confirmed_at: string | null; created_at: string; order_items: { product_name: string; unit_price: number; size: string; color: string; quantity: number; line_total: number }[]; status_history: OrderEvent[] }
 
 const blank = { full_name: '', phone: '', address: '', city: '', state: '', postal_code: '' }
 
@@ -18,6 +19,7 @@ const orderStatusLabels: Record<string, string> = {
   shipped: 'Shipped',
   delivered: 'Delivered',
   cancelled: 'Cancelled',
+  pending_payment: 'Awaiting UPI payment',
 }
 
 export default function AccountPage() {
@@ -35,6 +37,7 @@ export default function AccountPage() {
   const [busy, setBusy] = useState(true)
   const [saving, setSaving] = useState(false)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [cancellingOrder, setCancellingOrder] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
@@ -59,16 +62,23 @@ export default function AccountPage() {
       supabase.from('admin_users').select('user_id').eq('user_id', current.id).maybeSingle(),
     ])
     const { data: orderRows, error: orderError } = profileRow
-      ? await supabase.from('orders').select('id,order_number,total,status,payment_status,created_at,order_items(product_name,unit_price,size,color,quantity,line_total)').eq('customer_id', profileRow.id).order('created_at', { ascending: false })
+      ? await supabase.from('orders').select('id,order_number,total,status,payment_status,payment_method,tracking_number,courier_partner,cod_confirmed_at,created_at,order_items(product_name,unit_price,size,color,quantity,line_total)').eq('customer_id', profileRow.id).order('created_at', { ascending: false })
+      : { data: [], error: null }
+    const orderIds = (orderRows ?? []).map((order) => order.id)
+    const { data: historyRows, error: historyError } = orderIds.length
+      ? await supabase.from('order_status_history').select('id,order_id,old_status,new_status,note,created_at').in('order_id', orderIds).order('created_at', { ascending: true })
       : { data: [], error: null }
     if (profileCreateError) setError(profileCreateError.message)
     if (profileError) setError(profileError.message)
     if (orderError) setError(orderError.message)
+    if (historyError) setError(historyError.message)
     if (profileRow) {
       setProfile(profileRow as Profile)
       setForm({ full_name: profileRow.full_name ?? metadataName, phone: profileRow.phone ?? '', address: profileRow.address ?? '', city: profileRow.city ?? '', state: profileRow.state ?? '', postal_code: profileRow.postal_code ?? '' })
     }
-    setOrders((orderRows ?? []) as unknown as Order[])
+    const historyByOrder = new Map<string, OrderEvent[]>()
+    for (const event of historyRows ?? []) historyByOrder.set(event.order_id, [...(historyByOrder.get(event.order_id) ?? []), event])
+    setOrders(((orderRows ?? []) as unknown as Order[]).map((order) => ({ ...order, status_history: historyByOrder.get(order.id) ?? [] })))
     setIsAdmin(Boolean(adminRow))
     setBusy(false)
   }
@@ -215,6 +225,28 @@ export default function AccountPage() {
     finally { setSaving(false) }
   }
 
+  async function cancelOrder(orderId: string, refreshRefund = false) {
+    if (!user || cancellingOrder || (!refreshRefund && !window.confirm('Cancel this order? If it has been paid, Stripe will start a refund to your original payment method.'))) return
+    setCancellingOrder(orderId); setError(''); setMessage('')
+    try {
+      const { data: { session } } = await getSupabaseBrowserClient().auth.getSession()
+      if (!session?.access_token) throw new Error('Sign in again to cancel this order.')
+      const response = await fetch('/api/orders/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ orderId, reason: 'Customer requested cancellation' }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error ?? 'Could not cancel this order.')
+      setMessage(result.paymentStatus === 'refund_pending' ? refreshRefund ? 'Your refund is still processing with Stripe.' : 'Order cancelled. Your refund is processing with Stripe.' : result.paymentStatus === 'refunded' ? refreshRefund ? 'Your refund is complete.' : 'Order cancelled and refund issued.' : 'Order cancelled successfully.')
+      await loadAccount()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not cancel this order.')
+    } finally {
+      setCancellingOrder('')
+    }
+  }
+
   async function signOut() {
     await getSupabaseBrowserClient().auth.signOut()
     setMessage('You have signed out.')
@@ -270,8 +302,13 @@ export default function AccountPage() {
         <div className="account-orders-heading"><Package size={20} /><h2>Order history</h2></div>
         {!orders.length ? <div className="account-no-orders"><p>Your past orders will appear here.</p><Link className="text-link" href="/products">Explore the collection ↗</Link></div> : orders.map((order) => <article className="account-order" key={order.id}>
           <div className="account-order-top"><div><strong>{order.order_number}</strong><span>{new Date(order.created_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}</span></div><strong>{formatPrice(Number(order.total))}</strong></div>
-          <span className="account-order-status">{orderStatusLabels[order.status] ?? order.status} · Payment: {order.payment_status}</span>
+          <span className="account-order-status">{orderStatusLabels[order.status] ?? order.status} · Payment: {order.payment_status === 'refund_pending' ? 'refund processing' : order.payment_status}</span>
+          {order.payment_method === 'cod' && order.cod_confirmed_at && <p className="account-order-note">Cash on delivery confirmed · {new Date(order.cod_confirmed_at).toLocaleDateString('en-IN', { day:'numeric', month:'short' })}</p>}
+          {order.tracking_number && <p className="account-order-note">Tracking · {order.courier_partner ? `${order.courier_partner} · ` : ''}<strong>{order.tracking_number}</strong></p>}
           <div className="account-order-items">{(order.order_items ?? []).map((item, index) => <p key={index}>{item.product_name} · {item.color} / {item.size} × {item.quantity}</p>)}</div>
+          {order.status_history.length > 0 && <ol className="account-order-timeline" aria-label={`Status history for ${order.order_number}`}>{order.status_history.map((event) => <li key={event.id}><span>{orderStatusLabels[event.new_status] ?? event.new_status}</span><time dateTime={event.created_at}>{new Date(event.created_at).toLocaleString('en-IN', { dateStyle:'medium', timeStyle:'short' })}</time>{event.note && <small>{event.note}</small>}</li>)}</ol>}
+          {['pending_payment', 'confirmed', 'processing'].includes(order.status) && <button className="account-order-cancel" type="button" disabled={Boolean(cancellingOrder)} onClick={() => void cancelOrder(order.id)}>{cancellingOrder === order.id ? 'Cancelling…' : 'Cancel order'}</button>}
+          {order.status === 'cancelled' && order.payment_status === 'refund_pending' && <button className="account-order-cancel" type="button" disabled={Boolean(cancellingOrder)} onClick={() => void cancelOrder(order.id, true)}>{cancellingOrder === order.id ? 'Checking…' : 'Check refund status'}</button>}
         </article>)}
       </section>
     </div>}
