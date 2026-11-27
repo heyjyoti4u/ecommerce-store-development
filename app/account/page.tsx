@@ -221,7 +221,7 @@ export default function AccountPage() {
   }
 
   async function cancelOrder(orderId: string, refreshRefund = false) {
-    if (!user || cancellingOrder || (!refreshRefund && !window.confirm('Cancel this order? If it has been paid, Stripe will start a refund to your original payment method.'))) return
+    if (!user || cancellingOrder || (!refreshRefund && !window.confirm('Cancel this order? If it has been paid, Razorpay will process the refund to your original payment method.'))) return
     setCancellingOrder(orderId); setError(''); setMessage('')
     try {
       const { data: { session } } = await getSupabaseBrowserClient().auth.getSession()
@@ -233,7 +233,7 @@ export default function AccountPage() {
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error ?? 'Could not cancel this order.')
-      setMessage(result.paymentStatus === 'refund_pending' ? refreshRefund ? 'Your refund is still processing with Stripe.' : 'Order cancelled. Your refund is processing with Stripe.' : result.paymentStatus === 'refunded' ? refreshRefund ? 'Your refund is complete.' : 'Order cancelled and refund issued.' : 'Order cancelled successfully.')
+      setMessage(result.paymentStatus === 'refund_pending' ? refreshRefund ? 'Your refund is still processing with Razorpay.' : 'Order cancelled. Your refund is processing with Stripe.' : result.paymentStatus === 'refunded' ? refreshRefund ? 'Your refund is complete.' : 'Order cancelled and refund issued through Razorpay.' : 'Order cancelled successfully.')
       await loadAccount()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not cancel this order.')
@@ -266,6 +266,7 @@ export default function AccountPage() {
         <label className="form-field">Email address<input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
         <label className="form-field">Password<input type="password" required minLength={6} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} /></label>
         <button className="button-dark full-width" disabled={saving}>{saving ? 'Please wait…' : mode === 'signup' ? 'Create account' : 'Sign in'}</button>
+        {mode === 'signin' && <Link className="account-forgot-link" href="/account/forgot-password">Forgot your password?</Link>}
       </form>
       <p className="detail-note">Passwords are securely managed by Supabase Authentication. Email verification is required for new accounts.</p>
     </section> : <div className="account-layout">
