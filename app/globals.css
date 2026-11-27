@@ -1319,3 +1319,27 @@ a { color: inherit; text-decoration: none; }
     align-self: flex-start;
   }
 }
+
+/* Keep customer order history compact with its own scroll area */
+.account-orders-list {
+  max-height: 620px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: #b9b8ae #eeede7;
+}
+.account-orders-list::-webkit-scrollbar {
+  width: 7px;
+}
+.account-orders-list::-webkit-scrollbar-track {
+  background: #eeede7;
+}
+.account-orders-list::-webkit-scrollbar-thumb {
+  background: #b9b8ae;
+  border-radius: 10px;
+}
+.account-orders-list .account-order:first-child {
+  padding-top: 20px;
+}
+
