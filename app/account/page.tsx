@@ -233,7 +233,7 @@ export default function AccountPage() {
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error ?? 'Could not cancel this order.')
-      setMessage(result.paymentStatus === 'refund_pending' ? refreshRefund ? 'Your refund is still processing with Razorpay.' : 'Order cancelled. Your refund is processing with Stripe.' : result.paymentStatus === 'refunded' ? refreshRefund ? 'Your refund is complete.' : 'Order cancelled and refund issued through Razorpay.' : 'Order cancelled successfully.')
+      setMessage(result.paymentStatus === 'refund_pending' ? refreshRefund ? 'Your refund is still processing with Razorpay.' : 'Order cancelled. Your refund is processing with Razorpay.' : result.paymentStatus === 'refunded' ? refreshRefund ? 'Your refund is complete.' : 'Order cancelled and refund issued through Razorpay.' : 'Order cancelled successfully.')
       await loadAccount()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not cancel this order.')
