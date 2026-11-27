@@ -5,7 +5,7 @@ import { Heart } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
-export default function WishlistButton({ productId, className = '' }: { productId: string; className?: string }) {
+export default function WishlistButton({ productId, className = '', onRemoved }: { productId: string; className?: string; onRemoved?: () => void }) {
   const router = useRouter()
   const [saved, setSaved] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -33,6 +33,7 @@ export default function WishlistButton({ productId, className = '' }: { productI
         const { error } = await supabase.from('wishlist_items').delete().eq('user_id', user.id).eq('product_id', productId)
         if (error) throw error
         setSaved(false)
+        onRemoved?.()
       } else {
         const { error } = await supabase.from('wishlist_items').insert({ user_id: user.id, product_id: productId })
         if (error) throw error
