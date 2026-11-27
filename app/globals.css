@@ -1343,3 +1343,66 @@ a { color: inherit; text-decoration: none; }
   padding-top: 20px;
 }
 
+/* Customer wishlist and password recovery */
+.oro-wishlist-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--line, #dedbd2);
+  border-radius: 50%;
+  background: #fff;
+  color: #26372f;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, border-color .2s ease;
+}
+.oro-wishlist-button:hover,
+.oro-wishlist-button.is-saved {
+  background: #26372f;
+  border-color: #26372f;
+  color: #fff;
+}
+.oro-wishlist-button:disabled { cursor: wait; opacity: .65; }
+.product-photo-wrap { position: relative; }
+.product-photo-wrap .product-wishlist {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+}
+.detail-purchase-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+.detail-purchase-actions .detail-add { flex: 1; margin-top: 0; }
+.detail-purchase-actions .detail-wishlist { flex: 0 0 48px; height: 48px; }
+.account-forgot-link {
+  display: inline-block;
+  margin-top: 14px;
+  color: #53665b;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.account-password-panel { max-width: 520px; margin: 36px auto 80px; }
+.account-password-panel h1 { margin: 12px 0; }
+.account-password-panel .account-form p { line-height: 1.65; }
+.wishlist-page .account-no-orders {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+.wishlist-page .account-no-orders .button-dark { padding: 14px 24px; text-decoration: none; }
+@media (max-width: 640px) {
+  .detail-purchase-actions { gap: 8px; }
+  .detail-purchase-actions .detail-wishlist { flex-basis: 44px; height: 44px; }
+}
