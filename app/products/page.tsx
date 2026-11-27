@@ -3,7 +3,8 @@ import StoreHeader from '@/components/store-header'
 import ProductCatalog from '@/components/storefront/product-catalog'
 import { getCatalog } from '@/lib/catalog'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export const metadata = { title: 'Shop all — ORO', description: 'Explore thoughtful clothing, bags and accessories from ORO. Prices in Indian rupees.' }
 
