@@ -316,9 +316,14 @@ a { color: inherit; text-decoration: none; }
 .checkout-fields .form-field { font-size:9px; text-transform:uppercase; letter-spacing:.09em; }
 .checkout-fields .form-field input { margin-top:0; }
 .payment-section { padding:27px 0 4px; }
-.payment-section .payment-choice { display:flex; align-items:center; gap:10px; }
-.payment-section .payment-choice input { accent-color:#29382f; }
-.payment-section .payment-choice span { margin-left:auto; }
+.payment-section .payment-choice { display:flex; align-items:center; gap:10px; min-height:44px; padding:10px 12px; border:1px solid var(--border); cursor:pointer; }
+.payment-section .payment-choice + .payment-choice { margin-top:9px; }
+.payment-section .payment-choice:focus-within { outline:2px solid #53664f; outline-offset:2px; }
+.payment-section .payment-choice input { accent-color:#29382f; flex:none; }
+.payment-section .payment-choice strong { font-size:11px; font-weight:500; }
+.payment-section .payment-choice span { margin-left:auto; color:#77766f; font-size:10px; }
+.payment-section .payment-choice .payment-status { color:#77766f; text-transform:uppercase; letter-spacing:.06em; font-size:8px; }
+.confirmation-check-icon { display:grid; place-items:center; width:56px; height:56px; padding:10px; border:1px solid #a7b29e; border-radius:50%; color:#53664f; margin-bottom:24px; }
 .checkout-submit { margin-top:14px; }
 .checkout-submit:disabled { opacity:.65; cursor:not-allowed; }
 .phone-input-row { display:flex; align-items:center; gap:10px; }
@@ -1027,6 +1032,13 @@ a { color: inherit; text-decoration: none; }
 .account-order-status { display:inline-block; margin-top:10px; padding:5px 9px; background:#eeeee8; }
 .account-order-items { margin-top:12px; color:#66675f; font-size:12px; line-height:1.6; }
 .account-order-items p { margin:4px 0; }
+.account-order-note { margin:11px 0 0; color:#5f6758; font-size:11px; }
+.account-order-timeline { display:grid; gap:10px; margin:16px 0 0; padding:0 0 0 15px; border-left:1px solid #d7d8cf; list-style:none; }
+.account-order-timeline li { display:grid; grid-template-columns:1fr auto; gap:3px 12px; color:#41463d; font-size:10px; }
+.account-order-timeline time { color:#77766f; font-size:9px; }
+.account-order-timeline small { grid-column:1/-1; color:#77766f; font-size:9px; }
+.account-order-cancel { margin-top:14px; padding:8px 0; color:#8b3f32; font-size:10px; text-decoration:underline; }
+.account-order-cancel:disabled { opacity:.55; cursor:not-allowed; }
 
 @media (max-width:760px) {
   .account-layout { grid-template-columns:1fr; gap:42px; }
