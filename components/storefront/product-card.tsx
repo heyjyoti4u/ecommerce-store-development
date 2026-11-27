@@ -21,14 +21,14 @@ export default function ProductCard({ product }: { product: Product }) {
   return <>
     <article className="product-card">
       <div className="product-photo-wrap">
-        <Link className="product-photo" href={`/products/${product.id}`} aria-label={`View ${product.name} in ${color}`}>
+        <Link className="product-photo" href={`/products/${product.id}`} prefetch aria-label={`View ${product.name} in ${color}`}>
           {product.badge && <span className="product-badge">{product.badge}</span>}
           <img className="product-image-primary" src={images[0] ?? product.image} alt={`${product.name} in ${color}`} loading="lazy" decoding="async" />
         </Link>
         <button className="product-add" type="button" onClick={() => setQuickView(true)} aria-label={`Choose options for ${product.name}`}><Plus size={17} /></button>
       </div>
       <div className="product-info">
-        <Link href={`/products/${product.id}`}>
+        <Link href={`/products/${product.id}`} prefetch>
           <div className="product-name">{product.name}</div>
           <div className="product-category">{product.category}</div>
         </Link>

@@ -4,11 +4,12 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { Menu, Search, ShoppingBag, UserRound, X } from 'lucide-react'
 import { useCart } from '@/components/storefront/cart-store'
+import CartDrawer from '@/components/storefront/cart-drawer'
 
 const productLink = '/products'
 
 export default function StoreHeader() {
-  const { count } = useCart()
+  const { count, openDrawer } = useCart()
   const [open, setOpen] = useState(false)
   const [shopOpen, setShopOpen] = useState(false)
 
@@ -31,40 +32,40 @@ export default function StoreHeader() {
 
         <nav className="header-nav multi-nav oro-desktop-nav" aria-label="Main navigation">
           <div className="nav-group oro-nav-group">
-            <Link href={productLink} className="oro-nav-trigger">Shop <span>⌄</span></Link>
+            <Link href={productLink} prefetch className="oro-nav-trigger">Shop <span>⌄</span></Link>
 
             <div className="oro-mega-menu">
               <div className="oro-mega-column">
                 <span className="oro-mega-heading">Explore the collection</span>
-                <Link href={productLink}>All products</Link>
-                <Link href={productLink}>Clothing</Link>
-                <Link href={productLink}>Bags</Link>
-                <Link href={productLink}>Accessories</Link>
+                <Link href={productLink} prefetch>All products</Link>
+                <Link href={productLink} prefetch>Clothing</Link>
+                <Link href={productLink} prefetch>Bags</Link>
+                <Link href={productLink} prefetch>Accessories</Link>
               </div>
 
               <div className="oro-mega-column">
                 <span className="oro-mega-heading">Featured collections</span>
-                <Link href={productLink}>Best sellers</Link>
-                <Link href={productLink}>New arrivals</Link>
-                <Link href={productLink}>The little extras</Link>
-                <Link href={productLink}>Everyday edit</Link>
+                <Link href={productLink} prefetch>Best sellers</Link>
+                <Link href={productLink} prefetch>New arrivals</Link>
+                <Link href={productLink} prefetch>The little extras</Link>
+                <Link href={productLink} prefetch>Everyday edit</Link>
               </div>
 
-              <Link className="oro-mega-feature" href={productLink}>
+              <Link className="oro-mega-feature" href={productLink} prefetch>
                 <img src="/atelier-hero.png" alt="Explore the ORO everyday collection" />
                 <span>Shop <strong>the everyday edit</strong></span>
               </Link>
 
-              <Link className="oro-mega-feature" href={productLink}>
+              <Link className="oro-mega-feature" href={productLink} prefetch>
                 <img src="/atelier-hero.png" alt="Explore ORO bags and accessories" />
                 <span>Find your <strong>everyday carry</strong></span>
               </Link>
             </div>
           </div>
 
-          <Link href={productLink}>Our story</Link>
-          <Link href={productLink}>Explore</Link>
-          <Link href={productLink}>Sale</Link>
+          <Link href="/about" prefetch>Our story</Link>
+          <Link href={productLink} prefetch>Explore</Link>
+          <Link href={productLink} prefetch>Sale</Link>
         </nav>
 
         <div className="header-actions">
@@ -75,11 +76,11 @@ export default function StoreHeader() {
             <Search size={18} />
             <span className="action-label">Search</span>
           </Link>
-          <Link className="icon-action bag-link" href="/cart" aria-label={`Shopping bag, ${count} items`}>
+          <button className="icon-action bag-link" type="button" onClick={openDrawer} aria-label={`Shopping bag, ${count} items`}>
             <ShoppingBag size={18} />
             <span className="action-label">Bag</span>
             <span className="bag-count">{count}</span>
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -98,27 +99,28 @@ export default function StoreHeader() {
 
               {shopOpen && (
                 <div className="oro-mobile-submenu">
-                  <Link href={productLink} onClick={() => setOpen(false)}>All products</Link>
-                  <Link href={productLink} onClick={() => setOpen(false)}>Clothing</Link>
-                  <Link href={productLink} onClick={() => setOpen(false)}>Bags</Link>
-                  <Link href={productLink} onClick={() => setOpen(false)}>Accessories</Link>
+                  <Link href={productLink} prefetch onClick={() => setOpen(false)}>All products</Link>
+                  <Link href={productLink} prefetch onClick={() => setOpen(false)}>Clothing</Link>
+                  <Link href={productLink} prefetch onClick={() => setOpen(false)}>Bags</Link>
+                  <Link href={productLink} prefetch onClick={() => setOpen(false)}>Accessories</Link>
                 </div>
               )}
 
-              <Link className="oro-mobile-row" href={productLink} onClick={() => setOpen(false)}>Our story <span>↗</span></Link>
+              <Link className="oro-mobile-row" href="/about" prefetch onClick={() => setOpen(false)}>Our story <span>↗</span></Link>
               <Link className="oro-mobile-row" href={productLink} onClick={() => setOpen(false)}>Explore <span>↗</span></Link>
               <Link className="oro-mobile-row" href={productLink} onClick={() => setOpen(false)}>Sale <span>↗</span></Link>
             </div>
 
             <div className="oro-mobile-quicklinks">
               <span>Shop by category</span>
-              <Link href={productLink} onClick={() => setOpen(false)}>Clothing</Link>
-              <Link href={productLink} onClick={() => setOpen(false)}>Bags</Link>
-              <Link href={productLink} onClick={() => setOpen(false)}>Accessories</Link>
+              <Link href={productLink} prefetch onClick={() => setOpen(false)}>Clothing</Link>
+              <Link href={productLink} prefetch onClick={() => setOpen(false)}>Bags</Link>
+              <Link href={productLink} prefetch onClick={() => setOpen(false)}>Accessories</Link>
             </div>
           </div>
         </div>
       )}
     </header>
+    <CartDrawer />
   </>
 }

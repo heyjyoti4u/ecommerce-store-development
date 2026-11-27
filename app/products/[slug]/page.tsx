@@ -16,7 +16,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const product = await getProduct(slug)
+  const catalog = await getCatalog()
+  const product = catalog.find((item) => item.id === slug)
   if (!product) notFound()
-  return <><StoreHeader /><main className="store-page product-detail-page"><div className="store-breadcrumb"><Link href="/">Home</Link><span>/</span><Link href="/products">Shop</Link><span>/</span>{product.name}</div><ProductDetailExperience product={product} /></main></>
+  const recommendations = catalog
+    .filter((item) => item.id !== product.id)
+    .sort((a, b) => Number(b.category === product.category) - Number(a.category === product.category))
+    .slice(0, 4)
+  return <><StoreHeader /><main className="store-page product-detail-page"><div className="store-breadcrumb"><Link href="/">Home</Link><span>/</span><Link href="/products" prefetch>Shop</Link><span>/</span>{product.name}</div><ProductDetailExperience product={product} recommendations={recommendations} /></main></>
 }
