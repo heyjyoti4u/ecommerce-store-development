@@ -1,5 +1,5 @@
 -- ORO order lifecycle and Stripe UPI migration.
--- Apply after setup.sql, customer-accounts.sql, and admin-access.sql in Supabase SQL Editor.
+-- Apply after setup.sql and customer-accounts.sql in Supabase SQL Editor. This migration does not require storefront admin access.
 -- This migration is not applied automatically by the app.
 begin;
 
@@ -44,12 +44,7 @@ create table if not exists public.product_inventory (
 alter table public.product_inventory enable row level security;
 revoke all on public.product_inventory from anon, authenticated;
 grant all on public.product_inventory to service_role;
-grant select, insert, update, delete on public.product_inventory to authenticated;
-drop policy if exists "Admins can manage product inventory" on public.product_inventory;
-create policy "Admins can manage product inventory"
-  on public.product_inventory for all to authenticated
-  using (exists (select 1 from public.admin_users a where a.user_id = (select auth.uid())))
-  with check (exists (select 1 from public.admin_users a where a.user_id = (select auth.uid())));
+-- Inventory is managed only by trusted server-side service_role code.
 
 create table if not exists public.order_status_history (
   id bigint generated always as identity primary key,
@@ -67,7 +62,8 @@ revoke all on public.order_status_history from anon, authenticated;
 grant select on public.order_status_history to authenticated;
 grant all on public.order_status_history to service_role;
 drop policy if exists "Customers and admins can read order status history" on public.order_status_history;
-create policy "Customers and admins can read order status history"
+drop policy if exists "Customers can read own order status history" on public.order_status_history;
+create policy "Customers can read own order status history"
   on public.order_status_history for select to authenticated
   using (
     exists (
@@ -76,7 +72,6 @@ create policy "Customers and admins can read order status history"
       where o.id = order_status_history.order_id
         and p.user_id = (select auth.uid())
     )
-    or exists (select 1 from public.admin_users a where a.user_id = (select auth.uid()))
   );
 
 create or replace function public.record_order_status_change()
