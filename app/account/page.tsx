@@ -54,11 +54,13 @@ export default function AccountPage() {
       state: '',
       postal_code: '',
     }, { onConflict: 'user_id', ignoreDuplicates: true })
-    const [{ data: profileRow, error: profileError }, { data: orderRows, error: orderError }, { data: adminRow }] = await Promise.all([
-      supabase.from('customer_profiles').select('*').eq('user_id', current.id).maybeSingle(),
-      supabase.from('orders').select('id,order_number,total,status,payment_status,created_at,order_items(product_name,unit_price,size,color,quantity,line_total)').order('created_at', { ascending: false }),
+    const [{ data: profileRow, error: profileError }, { data: adminRow }] = await Promise.all([
+      supabase.from('customer_profiles').select('id,user_id,email,full_name,phone,address,city,state,postal_code,avatar_url').eq('user_id', current.id).maybeSingle(),
       supabase.from('admin_users').select('user_id').eq('user_id', current.id).maybeSingle(),
     ])
+    const { data: orderRows, error: orderError } = profileRow
+      ? await supabase.from('orders').select('id,order_number,total,status,payment_status,created_at,order_items(product_name,unit_price,size,color,quantity,line_total)').eq('customer_id', profileRow.id).order('created_at', { ascending: false })
+      : { data: [], error: null }
     if (profileCreateError) setError(profileCreateError.message)
     if (profileError) setError(profileError.message)
     if (orderError) setError(orderError.message)
@@ -106,7 +108,9 @@ export default function AccountPage() {
     try {
       const supabase = getSupabaseBrowserClient()
       if (mode === 'signup') {
-        const emailRedirectTo = `${window.location.origin}/auth/callback?next=/account`
+        const requestedNext = new URLSearchParams(window.location.search).get('next')
+        const safeNext = requestedNext?.startsWith('/') && !requestedNext.startsWith('//') ? requestedNext : '/account?verified=1'
+        const emailRedirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}`
         const { data, error: authError } = await supabase.auth.signUp({
           email: email.trim().toLowerCase(),
           password,
@@ -115,6 +119,11 @@ export default function AccountPage() {
         if (authError) throw authError
         if (data.session) {
           setAwaitingVerification(false)
+          const requestedNext = new URLSearchParams(window.location.search).get('next')
+          if (requestedNext?.startsWith('/') && !requestedNext.startsWith('//')) {
+            window.location.assign(requestedNext)
+            return
+          }
           setMessage('Your account is ready.')
           await loadAccount()
         } else {
@@ -145,6 +154,11 @@ export default function AccountPage() {
           throw authError
         }
         setAwaitingVerification(false)
+        const requestedNext = new URLSearchParams(window.location.search).get('next')
+        if (requestedNext?.startsWith('/') && !requestedNext.startsWith('//')) {
+          window.location.assign(requestedNext)
+          return
+        }
         await loadAccount()
       }
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Authentication failed.') }
@@ -155,10 +169,12 @@ export default function AccountPage() {
     if (!pendingEmail || resendWait > 0 || saving) return
     setSaving(true); setError(''); setMessage('')
     try {
+      const requestedNext = new URLSearchParams(window.location.search).get('next')
+      const safeNext = requestedNext?.startsWith('/') && !requestedNext.startsWith('//') ? requestedNext : '/account?verified=1'
       const { error: resendError } = await getSupabaseBrowserClient().auth.resend({
         type: 'signup',
         email: pendingEmail,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/account` },
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}` },
       })
       if (resendError) throw resendError
       setResendWait(60)
