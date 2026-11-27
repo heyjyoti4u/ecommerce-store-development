@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { Product } from '@/lib/store-products'
+import { getVariantStock } from '@/components/storefront/stock'
 
 export type CartLine = { product: Product; size: string; color: string; quantity: number }
 type CartContextValue = {
@@ -21,10 +22,17 @@ const CartContext = createContext<CartContextValue | null>(null)
 const CART_STORAGE_KEY = 'oro-cart-v1'
 export const cartKey = (line: CartLine) => `${line.product.id}:${line.size}:${line.color}`
 
+function maxAllowed(product: Product, size: string, color: string) {
+  const stock = getVariantStock(product, size, color)
+  return stock === null ? 10 : Math.max(0, Math.min(10, stock))
+}
+
 function mergeCartLine(items: CartLine[], addition: CartLine) {
   const existing = items.find((line) => cartKey(line) === cartKey(addition))
-  if (!existing) return [...items, { ...addition, quantity: Math.min(10, addition.quantity) }]
-  return items.map((line) => line === existing ? { ...line, quantity: Math.min(10, line.quantity + addition.quantity) } : line)
+  const max = maxAllowed(addition.product, addition.size, addition.color)
+  if (max === 0) return items
+  if (!existing) return [...items, { ...addition, quantity: Math.min(max, addition.quantity) }]
+  return items.map((line) => line === existing ? { ...line, quantity: Math.min(max, line.quantity + addition.quantity) } : line)
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
@@ -89,7 +97,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setItems((current) => mergeCartLine(current, addition))
     },
     setQuantity(key, quantity) {
-      setItems((current) => current.flatMap((line) => cartKey(line) === key ? quantity > 0 ? [{ ...line, quantity: Math.min(10, quantity) }] : [] : [line]))
+      setItems((current) => current.flatMap((line) => {
+        if (cartKey(line) !== key) return [line]
+        if (quantity <= 0) return []
+        const max = maxAllowed(line.product, line.size, line.color)
+        return max > 0 ? [{ ...line, quantity: Math.min(max, quantity) }] : []
+      }))
     },
     remove(key) { setItems((current) => current.filter((line) => cartKey(line) !== key)) },
     clear() { setItems([]); try { window.localStorage.removeItem(CART_STORAGE_KEY) } catch { /* storage may be disabled */ } },
