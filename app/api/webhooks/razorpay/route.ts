@@ -27,15 +27,15 @@ export async function POST(request: Request) {
     const paymentId = event.payload?.payment?.entity?.id
     const orderId = event.payload?.payment?.entity?.order_id
     if (!paymentId || !orderId) return NextResponse.json({ received: true })
-    const payment = await razorpayRequest<{ id: string; order_id: string; status: string }>(`payments/${paymentId}`)
+    const payment = await razorpayRequest<{ id: string; order_id: string; status: string; amount: number; currency: string }>(`payments/${paymentId}`)
     if (payment.status !== 'captured' || payment.order_id !== orderId) return NextResponse.json({ received: true })
 
     const service = getSupabaseServiceClient()
     const { data: attempt } = await service.from('order_payment_attempts')
       .select('id,order_id').eq('razorpay_order_id', orderId).maybeSingle()
     if (!attempt) return NextResponse.json({ received: true })
-    const { data: order } = await service.from('orders').select('customer_id').eq('id', attempt.order_id).maybeSingle()
-    if (!order) return NextResponse.json({ received: true })
+    const { data: order } = await service.from('orders').select('customer_id,total,razorpay_order_id').eq('id', attempt.order_id).maybeSingle()
+    if (!order || order.razorpay_order_id !== orderId || payment.currency !== 'INR' || payment.amount !== Math.round(Number(order.total) * 100)) return NextResponse.json({ received: true })
     const { data: profile } = await service.from('customer_profiles').select('user_id').eq('id', order.customer_id).maybeSingle()
     if (!profile?.user_id) return NextResponse.json({ received: true })
     const { error } = await service.rpc('confirm_account_payment', {
