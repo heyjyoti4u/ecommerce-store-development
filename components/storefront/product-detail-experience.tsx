@@ -59,10 +59,8 @@ export default function ProductDetailExperience({ product, recommendations }: { 
       </>}
       <div className="detail-purchase-actions">
         <button className="button-dark full-width detail-add" type="button" disabled={!canAddToBag} onClick={() => { add(product, size, color); openDrawer() }}><ShoppingBag size={15} /> Add to bag</button>
-        <div className="detail-secondary-actions">
-          <WishlistButton productId={product.id} className="detail-wishlist" />
-          <p className="detail-note">Free shipping on orders over ₹3,000 · Cash on delivery available</p>
-        </div>
+        <WishlistButton productId={product.id} className="detail-wishlist detail-wishlist-bar" />
+        <p className="detail-note">Free shipping on orders over ₹3,000 · Cash on delivery available</p>
       </div>
     </div>
     <section className="product-shipping-info" aria-label="Shipping and returns">
