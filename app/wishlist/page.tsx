@@ -1,4 +1,3 @@
-import StoreHeader from '@/components/store-header'
 import WishlistPage from '@/app/wishlist/wishlist-page'
 import { getCatalog } from '@/lib/catalog'
 
