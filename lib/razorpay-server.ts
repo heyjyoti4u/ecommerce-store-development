@@ -1,7 +1,7 @@
 import 'server-only'
 import { createClient } from '@supabase/supabase-js'
 
-let supabaseService: ReturnType<typeof createClient> | undefined
+let supabaseService: ReturnType<typeof createClient<any>> | undefined
 
 export function getRazorpayCredentials() {
   const keyId = process.env.RAZORPAY_KEY_ID
@@ -33,7 +33,7 @@ export function getSupabaseServiceClient() {
   const url = process.env.ECOMMERCE_STORE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_ECOMMERCE_STORE_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.ECOMMERCE_STORE_SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !serviceKey) throw new Error('Supabase order processing is not configured for this deployment.')
-  supabaseService ??= createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
+  supabaseService ??= createClient<any>(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
   return supabaseService
 }
 
