@@ -24,9 +24,6 @@ The `/account` page supports email/password sign-up and sign-in, profile name, p
 
 The collection data is cached for 60 seconds. Product-card plus buttons open a quick-view panel where customers select colour and size before adding the item to the bag.
 
-## Admin access
+## Standalone admin app
 
-1. Keep the admin account created in Supabase Authentication → Users. The initial admin is the account `admin@gmail.com` with Auth UID `e068bc5c-80d0-4d37-81b0-451550f0192b`.
-2. Run `supabase/remove-storefront-admin.sql` in the Supabase SQL Editor after your existing admin and order-lifecycle migrations. This removes the storefront admin allowlist and its database policies; keep this step separate if you are setting up a new standalone admin app.
-
-The admin dashboard currently lists the latest 100 orders, customer and delivery details, line items, order totals, and lets the admin update order fulfilment status.
+The storefront no longer exposes admin routes or admin-role access. If the earlier admin SQL migrations were applied to this Supabase project, run `supabase/remove-storefront-admin.sql` once to remove the old admin policies and allowlist. A separate admin application can be connected later with its own authentication and narrowly scoped permissions.
