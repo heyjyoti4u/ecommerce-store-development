@@ -23,8 +23,8 @@ export default function AuthCallbackPage() {
         if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
           if (exchangeError) throw exchangeError
-        } else if (tokenHash && (type === 'signup' || type === 'email')) {
-          const { error: verifyError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type === 'signup' ? 'signup' : 'email' })
+        } else if (tokenHash && (type === 'signup' || type === 'email' || type === 'recovery')) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type === 'recovery' ? 'recovery' : type === 'signup' ? 'signup' : 'email' })
           if (verifyError) throw verifyError
         }
 
