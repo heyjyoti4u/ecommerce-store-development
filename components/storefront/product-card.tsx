@@ -14,7 +14,7 @@ const colorSwatches: Record<string, string> = {
   natural: '#d8c9ad', espresso: '#594438', stone: '#b9ad9b',
 }
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({ product, onWishlistRemoved }: { product: Product; onWishlistRemoved?: () => void }) {
   const [color, setColor] = useState(product.colors[0] ?? 'Natural')
   const [quickView, setQuickView] = useState(false)
   const images = getProductImages(product, color)
@@ -26,7 +26,7 @@ export default function ProductCard({ product }: { product: Product }) {
           {product.badge && <span className="product-badge">{product.badge}</span>}
           <img className="product-image-primary" src={images[0] ?? product.image} alt={`${product.name} in ${color}`} loading="lazy" decoding="async" />
         </Link>
-        <WishlistButton productId={product.id} className="product-wishlist" />
+        <WishlistButton productId={product.id} className="product-wishlist" onRemoved={onWishlistRemoved} />
         <button className="product-add" type="button" onClick={() => setQuickView(true)} aria-label={`Choose options for ${product.name}`}><Plus size={17} /></button>
       </div>
       <div className="product-info">
