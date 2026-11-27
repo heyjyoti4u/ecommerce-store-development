@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   const anonKey = getSupabaseAnonKey()
   const authorization = request.headers.get('authorization')
   if (!url || !anonKey) return NextResponse.json({ error: 'Supabase is not configured for checkout.' }, { status: 503 })
-  if (!authorization?.startsWith('Bearer ')) return NextResponse.json({ error: 'Sign in and confirm your email and mobile number before placing an order.' }, { status: 401 })
+  if (!authorization?.startsWith('Bearer ')) return NextResponse.json({ error: 'Sign in and confirm your email before placing an order.' }, { status: 401 })
 
   let payload: unknown
   try { payload = await request.json() } catch { return NextResponse.json({ error: 'Please check your checkout details and try again.' }, { status: 400 }) }
@@ -74,8 +74,6 @@ export async function POST(request: Request) {
   const { data: authData, error: authError } = await accountClient.auth.getUser(authorization.slice(7))
   if (authError || !authData.user) return NextResponse.json({ error: 'Please sign in again before placing your order.' }, { status: 401 })
   if (!authData.user.email_confirmed_at || submittedEmail !== authData.user.email?.toLowerCase()) return NextResponse.json({ error: 'Use your confirmed account email before placing an order.' }, { status: 403 })
-  const verifiedPhone = String(authData.user.phone ?? '').replace(/\D/g, '').slice(-10)
-  if (!authData.user.phone_confirmed_at || !verifiedPhone || verifiedPhone !== submittedPhone) return NextResponse.json({ error: 'Confirm the mobile number on your account before placing an order.' }, { status: 403 })
 
   const { error: profileError } = await accountClient.from('customer_profiles').update({
     full_name: String(customer.name).trim(),
