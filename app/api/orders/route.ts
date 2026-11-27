@@ -21,8 +21,7 @@ export async function POST(request: Request) {
   }
 
   const url = process.env.ECOMMERCE_STORE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_ECOMMERCE_STORE_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.ECOMMERCE_STORE_SUPABASE_SECRET_KEY ?? process.env.ECOMMERCE_STORE_SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) return NextResponse.json({ error: 'Supabase is not connected to this deployment yet.' }, { status: 503 })
+  if (!url) return NextResponse.json({ error: 'Supabase is not connected to this deployment yet.' }, { status: 503 })
 
   let payload: unknown
   try { payload = await request.json() } catch { return NextResponse.json({ error: 'Please check your checkout details and try again.' }, { status: 400 }) }
@@ -51,42 +50,31 @@ export async function POST(request: Request) {
   }
 
   const authorization = request.headers.get('authorization')
-  let data: { order_number: string; total: number } | null = null
-  let error: { message: string } | null = null
-
-  if (authorization?.startsWith('Bearer ')) {
-    const anonKey = process.env.NEXT_PUBLIC_ECOMMERCE_STORE_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY
-    if (!anonKey) return NextResponse.json({ error: 'Supabase anon key is missing for account checkout.' }, { status: 503 })
-    const token = authorization.slice(7)
-    const accountClient = createClient(url, anonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-      global: { headers: { Authorization: authorization } },
-    })
-    const { data: authData, error: authError } = await accountClient.auth.getUser(token)
-    if (authError || !authData.user) return NextResponse.json({ error: 'Please sign in again before placing your order.' }, { status: 401 })
-    const { error: profileError } = await accountClient.from('customer_profiles').update({
-      full_name: String(customer.name).trim(),
-      phone: String(customer.phone).replace(/\D/g, '').slice(-10),
-      address: String(customer.address).trim(),
-      city: String(customer.city).trim(),
-      state: String(customer.state).trim(),
-      postal_code: String(customer.postal).trim(),
-      updated_at: new Date().toISOString(),
-    }).eq('user_id', authData.user.id)
-    if (profileError) return NextResponse.json({ error: 'Please complete your saved profile details before placing the order.' }, { status: 400 })
-    const result = await accountClient.rpc('create_account_order', { p_items: [...normalized.values()] })
-    data = result.data
-    error = result.error
-  } else {
-    const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
-    const result = await supabase.rpc('create_guest_order', {
-      p_customer: Object.fromEntries(required.map((field) => [field, field === 'phone' ? String(customer[field]).replace(/\D/g, '').slice(-10) : String(customer[field]).trim()])),
-      p_items: [...normalized.values()],
-      p_payment_method: 'cod',
-    })
-    data = result.data
-    error = result.error
-  }
+  if (!authorization?.startsWith('Bearer ')) return NextResponse.json({ error: 'Sign in and confirm your email and mobile number before placing an order.' }, { status: 401 })
+  const anonKey = process.env.NEXT_PUBLIC_ECOMMERCE_STORE_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_ECOMMERCE_STORE_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY
+  if (!anonKey) return NextResponse.json({ error: 'Supabase anon key is missing for account checkout.' }, { status: 503 })
+  const token = authorization.slice(7)
+  const accountClient = createClient(url, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: authorization } },
+  })
+  const { data: authData, error: authError } = await accountClient.auth.getUser(token)
+  if (authError || !authData.user) return NextResponse.json({ error: 'Please sign in again before placing your order.' }, { status: 401 })
+  if (!authData.user.email_confirmed_at) return NextResponse.json({ error: 'Confirm your account email before placing an order.' }, { status: 403 })
+  const verifiedPhone = String(authData.user.phone ?? '').replace(/\D/g, '').slice(-10)
+  const submittedPhone = String(customer.phone).replace(/\D/g, '').slice(-10)
+  if (!authData.user.phone_confirmed_at || !verifiedPhone || verifiedPhone !== submittedPhone) return NextResponse.json({ error: 'Confirm the mobile number on your account before placing an order.' }, { status: 403 })
+  const { error: profileError } = await accountClient.from('customer_profiles').update({
+    full_name: String(customer.name).trim(),
+    phone: submittedPhone,
+    address: String(customer.address).trim(),
+    city: String(customer.city).trim(),
+    state: String(customer.state).trim(),
+    postal_code: String(customer.postal).trim(),
+    updated_at: new Date().toISOString(),
+  }).eq('user_id', authData.user.id)
+  if (profileError) return NextResponse.json({ error: 'Please complete your saved profile details before placing the order.' }, { status: 400 })
+  const { data, error } = await accountClient.rpc('create_account_order', { p_items: [...normalized.values()] })
   if (error || !data) {
     console.error('[orders] Supabase order creation failed:', error?.message ?? 'No order returned')
     return NextResponse.json({ error: 'We could not save your order. Please try again in a moment.' }, { status: 503 })

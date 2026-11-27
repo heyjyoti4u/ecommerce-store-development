@@ -30,7 +30,9 @@ export default function AuthCallbackPage() {
 
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) throw new Error('Email verification could not be completed. Please open the newest confirmation email or request another link.')
-        router.replace('/account?verified=1')
+        const requestedNext = params.get('next')
+        const safeNext = requestedNext?.startsWith('/') && !requestedNext.startsWith('//') ? requestedNext : '/account?verified=1'
+        router.replace(safeNext)
       } catch (cause) {
         if (active) setError(cause instanceof Error ? cause.message : 'Could not verify your email.')
       }
