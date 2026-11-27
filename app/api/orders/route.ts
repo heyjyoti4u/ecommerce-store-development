@@ -37,6 +37,22 @@ export async function POST(request: Request) {
   const phone = String(customer.phone).replace(/\D/g, '').slice(-10)
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^[6-9]\d{9}$/.test(phone) || !/^\d{6}$/.test(String(customer.postal).trim())) return NextResponse.json({ error: 'Enter a valid email, 10-digit Indian mobile number and 6-digit PIN code.' }, { status: 400 })
 
+  // Re-check current product availability and configured stock from the database;
+  // browser cart data is only a convenience snapshot and is not trusted.
+  const catalogService = getSupabaseServiceClient()
+  const requestedProductIds = [...new Set(items.map((raw) => raw && typeof raw === 'object' ? String((raw as Record<string, unknown>).product_id ?? '') : '').filter(Boolean))]
+  const { data: liveProducts, error: liveProductError } = await catalogService
+    .from('products')
+    .select('id,active,sizes,colors')
+    .in('id', requestedProductIds)
+  if (liveProductError) return NextResponse.json({ error: 'We could not verify product availability. Please try again.' }, { status: 503 })
+  const liveProductMap = new Map((liveProducts ?? []).map((product) => [product.id, product]))
+  const { data: liveStock, error: liveStockError } = await catalogService
+    .from('product_inventory')
+    .select('product_id,size,color,stock_on_hand')
+    .in('product_id', requestedProductIds)
+  if (liveStockError && liveStockError.code !== '42P01') return NextResponse.json({ error: 'We could not verify stock. Please try again.' }, { status: 503 })
+  const stockMap = new Map((liveStock ?? []).map((row) => [`${row.product_id}:${row.size}:${row.color}`, Number(row.stock_on_hand)]))
   const normalized = new Map<string, { product_id: string; size: string; color: string; quantity: number }>()
   for (const raw of items) {
     if (!raw || typeof raw !== 'object') return NextResponse.json({ error: 'Invalid item in your bag.' }, { status: 400 })
@@ -46,6 +62,11 @@ export async function POST(request: Request) {
     const color = typeof line.color === 'string' ? line.color.slice(0, 40) : ''
     const quantity = Number(line.quantity)
     if (!product_id || !size || !color || !Number.isInteger(quantity) || quantity < 1 || quantity > 10) return NextResponse.json({ error: 'A product option or quantity is invalid.' }, { status: 400 })
+    const liveProduct = liveProductMap.get(product_id)
+    if (!liveProduct?.active) return NextResponse.json({ error: 'One of the products is no longer available.' }, { status: 409 })
+    if ((Array.isArray(liveProduct.sizes) && liveProduct.sizes.length && !liveProduct.sizes.includes(size)) || (Array.isArray(liveProduct.colors) && liveProduct.colors.length && !liveProduct.colors.includes(color))) return NextResponse.json({ error: 'A selected product variant is no longer available.' }, { status: 409 })
+    const available = stockMap.get(`${product_id}:${size}:${color}`)
+    if (available !== undefined && quantity > available) return NextResponse.json({ error: 'The requested quantity is no longer in stock.' }, { status: 409 })
     const key = `${product_id}:${size}:${color}`
     const next = (normalized.get(key)?.quantity ?? 0) + quantity
     if (next > 10) return NextResponse.json({ error: 'Maximum 10 of each product option per order.' }, { status: 400 })
