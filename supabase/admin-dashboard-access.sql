@@ -11,6 +11,11 @@ create table if not exists public.admin_users (
 );
 alter table public.admin_users enable row level security;
 revoke all on public.admin_users from public, anon, authenticated;
+grant select on public.admin_users to authenticated;
+drop policy if exists "Staff can read own staff role" on public.admin_users;
+create policy "Staff can read own staff role"
+on public.admin_users for select to authenticated
+using (user_id = (select auth.uid()));
 
 -- Dashboard's product image bucket. Existing storefront product image URLs continue working.
 insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
