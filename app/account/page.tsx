@@ -294,7 +294,7 @@ export default function AccountPage() {
       </section>
       <section className="account-orders">
         <div className="account-orders-heading"><Package size={20} /><h2>Order history</h2></div>
-        {!orders.length ? <div className="account-no-orders"><p>Your past orders will appear here.</p><Link className="text-link" href="/products">Explore the collection ↗</Link></div> : orders.map((order) => <article className="account-order" key={order.id}>
+        {!orders.length ? <div className="account-no-orders"><p>Your past orders will appear here.</p><Link className="text-link" href="/products">Explore the collection ↗</Link></div> : <div className="account-orders-list">{orders.map((order) => <article className="account-order" key={order.id}>
           <div className="account-order-top"><div><strong>{order.order_number}</strong><span>{new Date(order.created_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}</span></div><strong>{formatPrice(Number(order.total))}</strong></div>
           <span className="account-order-status">{orderStatusLabels[order.status] ?? order.status} · Payment: {order.payment_status === 'refund_pending' ? 'refund processing' : order.payment_status}</span>
           {order.payment_method === 'cod' && order.cod_confirmed_at && <p className="account-order-note">Cash on delivery confirmed · {new Date(order.cod_confirmed_at).toLocaleDateString('en-IN', { day:'numeric', month:'short' })}</p>}
@@ -303,7 +303,7 @@ export default function AccountPage() {
           {order.status_history.length > 0 && <ol className="account-order-timeline" aria-label={`Status history for ${order.order_number}`}>{order.status_history.map((event) => <li key={event.id}><span>{orderStatusLabels[event.new_status] ?? event.new_status}</span><time dateTime={event.created_at}>{new Date(event.created_at).toLocaleString('en-IN', { dateStyle:'medium', timeStyle:'short' })}</time>{event.note && <small>{event.note}</small>}</li>)}</ol>}
           {['pending_payment', 'confirmed', 'processing'].includes(order.status) && <button className="account-order-cancel" type="button" disabled={Boolean(cancellingOrder)} onClick={() => void cancelOrder(order.id)}>{cancellingOrder === order.id ? 'Cancelling…' : 'Cancel order'}</button>}
           {order.status === 'cancelled' && order.payment_status === 'refund_pending' && <button className="account-order-cancel" type="button" disabled={Boolean(cancellingOrder)} onClick={() => void cancelOrder(order.id, true)}>{cancellingOrder === order.id ? 'Checking…' : 'Check refund status'}</button>}
-        </article>)}
+        </article>)}</div>}
       </section>
     </div>}
   </main></>
