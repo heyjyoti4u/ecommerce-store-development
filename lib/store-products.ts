@@ -12,6 +12,7 @@ export type Product = {
   sizes: string[]
   colors: string[]
   badge?: string
+  inventory?: Record<string, number>
 }
 
 export function getProductImages(product: Product, color = product.colors[0] ?? '') {
