@@ -48,6 +48,7 @@ export default function Storefront() {
   }
 
   function addToCart(product: Product, size: string, color: string) {
+    if (!isVariantAvailable(product, size, color)) { showNotice('This variant is out of stock'); return }
     add(product, size, color)
     setSelected(null)
     openDrawer()
