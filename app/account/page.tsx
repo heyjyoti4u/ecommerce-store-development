@@ -31,7 +31,8 @@ export default function AccountPage() {
   const [awaitingVerification, setAwaitingVerification] = useState(false)
   const [pendingEmail, setPendingEmail] = useState('')
   const [resendWait, setResendWait] = useState(0)
-  const [email, setEmail] = useState('')
+  const [signInEmail, setSignInEmail] = useState('')
+  const [signUpEmail, setSignUpEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -110,6 +111,7 @@ export default function AccountPage() {
 
   async function authenticate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(''); setMessage(''); setSaving(true)
+    const activeEmail = (mode === 'signup' ? signUpEmail : signInEmail).trim().toLowerCase()
     try {
       const supabase = getSupabaseBrowserClient()
       if (mode === 'signup') {
@@ -117,7 +119,7 @@ export default function AccountPage() {
         const safeNext = requestedNext?.startsWith('/') && !requestedNext.startsWith('//') ? requestedNext : '/account?verified=1'
         const emailRedirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}`
         const { data, error: authError } = await supabase.auth.signUp({
-          email: email.trim().toLowerCase(),
+          email: activeEmail,
           password,
           options: { data: { full_name: form.full_name.trim() }, emailRedirectTo },
         })
@@ -132,12 +134,12 @@ export default function AccountPage() {
           setMessage('Your account is ready.')
           await loadAccount()
         } else {
-          setPendingEmail(email.trim().toLowerCase())
+          setPendingEmail(activeEmail)
           setAwaitingVerification(true)
           if (data.user && data.user.identities?.length === 0) {
             const { error: resendError } = await supabase.auth.resend({
               type: 'signup',
-              email: email.trim().toLowerCase(),
+              email: activeEmail,
               options: { emailRedirectTo },
             })
             if (resendError) throw resendError
@@ -149,10 +151,10 @@ export default function AccountPage() {
           }
         }
       } else {
-        const { error: authError } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
+        const { error: authError } = await supabase.auth.signInWithPassword({ email: activeEmail, password })
         if (authError) {
           if (authError.message.toLowerCase().includes('email not confirmed')) {
-            setPendingEmail(email.trim().toLowerCase())
+            setPendingEmail(activeEmail)
             setAwaitingVerification(true)
             return
           }
@@ -260,10 +262,10 @@ export default function AccountPage() {
       <button className="button-dark full-width" type="button" disabled={saving || resendWait > 0} onClick={() => void resendVerification()}>{saving ? 'Sending…' : resendWait > 0 ? `Resend verification email (${resendWait}s)` : 'Resend verification email'}</button>
       <button className="verification-back" type="button" onClick={() => { setAwaitingVerification(false); setMode('signin'); setMessage(''); setError('') }}>Back to sign in</button>
     </section> : <section className="account-auth">
-      <div className="account-auth-tabs"><button className={mode === 'signin' ? 'active' : ''} onClick={() => setMode('signin')} type="button">Sign in</button><button className={mode === 'signup' ? 'active' : ''} onClick={() => setMode('signup')} type="button">Create account</button></div>
+      <div className="account-auth-tabs"><button className={mode === 'signin' ? 'active' : ''} onClick={() => { setMode('signin'); setPassword(''); setError(''); setMessage('') }} type="button">Sign in</button><button className={mode === 'signup' ? 'active' : ''} onClick={() => { setMode('signup'); setPassword(''); setError(''); setMessage('') }} type="button">Create account</button></div>
       <form className="account-form" onSubmit={authenticate}>
         {mode === 'signup' && <label className="form-field">Full name<input required autoComplete="name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></label>}
-        <label className="form-field">Email address<input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
+        <label className="form-field">Email address<input type="email" required autoComplete="email" autoComplete={mode === 'signup' ? 'section-signup email' : 'section-signin email'} value={mode === 'signup' ? signUpEmail : signInEmail} onChange={(e) => mode === 'signup' ? setSignUpEmail(e.target.value) : setSignInEmail(e.target.value)} /></label>
         <label className="form-field">Password<input type="password" required minLength={6} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} /></label>
         <button className="button-dark full-width" disabled={saving}>{saving ? 'Please wait…' : mode === 'signup' ? 'Create account' : 'Sign in'}</button>
         {mode === 'signin' && <Link className="account-forgot-link" href="/account/forgot-password">Forgot your password?</Link>}
