@@ -6,13 +6,14 @@
 2. Run `supabase/setup.sql` once if the base storefront schema has not already been installed. It creates the products, customer_profiles, orders and order_items tables and the guest checkout RPC.
 3. Run `supabase/customer-accounts.sql` in the same project's SQL Editor.
 4. Run `supabase/production-option-validation.sql` in the same project's SQL Editor. This keeps non-empty size/colour choices validated while allowing products whose option arrays are intentionally empty. This adds Supabase Auth profile linking, profile row-level security, avatar storage policies and the authenticated order RPC.
-5. In Supabase Authentication settings, configure the Site URL and redirect URLs for the local app and the production Vercel domain. Enable email/password sign-in.
-6. In Vercel Project Settings → Environment Variables, set:
+5. Run `supabase/order-lifecycle.sql` in the same project's SQL Editor. This installs the four-argument authenticated order RPC, order idempotency, UPI payment-attempt functions and order lifecycle columns. It is required before signed-in COD or UPI checkout can save orders.
+6. In Supabase Authentication settings, configure the Site URL and redirect URLs for the local app and the production Vercel domain. Enable email/password sign-in.
+7. In Vercel Project Settings → Environment Variables, set:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_URL`
    - `SUPABASE_SECRET_KEY` (server-only service/secret key; never expose it with a NEXT_PUBLIC_ prefix)
-7. Redeploy after changing environment variables.
+8. Add `STRIPE_SECRET_KEY` in Vercel for UPI Checkout (server-only; never use a `NEXT_PUBLIC_` prefix). Add it from Stripe Dashboard → Developers → API keys, using a test secret key for testing and a live secret key only when ready to accept real payments. Redeploy after changing environment variables.
 
 The existing guest checkout continues to use the server-only secret key and `create_guest_order`. Signed-in checkout sends the user's Supabase access token and uses `create_account_order`, so those orders are linked to the signed-in customer's profile. Customer profile and order-history reads are protected by RLS.
 
