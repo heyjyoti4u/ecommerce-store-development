@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { Menu, Search, ShoppingBag, UserRound, X } from 'lucide-react'
+import { Heart, Menu, Search, ShoppingBag, UserRound, X } from 'lucide-react'
 import { useCart } from '@/components/storefront/cart-store'
 import CartDrawer from '@/components/storefront/cart-drawer'
 
@@ -69,6 +69,7 @@ export default function StoreHeader() {
         </nav>
 
         <div className="header-actions">
+          <Link className="icon-action" href="/wishlist" aria-label="Wishlist"><Heart size={18} /></Link>
           <Link className="icon-action" href="/account" aria-label="My account">
             <UserRound size={18} />
           </Link>
