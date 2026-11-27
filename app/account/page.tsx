@@ -27,7 +27,6 @@ export default function AccountPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [form, setForm] = useState(blank)
   const [orders, setOrders] = useState<Order[]>([])
-  const [isAdmin, setIsAdmin] = useState(false)
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [awaitingVerification, setAwaitingVerification] = useState(false)
   const [pendingEmail, setPendingEmail] = useState('')
@@ -57,10 +56,7 @@ export default function AccountPage() {
       state: '',
       postal_code: '',
     }, { onConflict: 'user_id', ignoreDuplicates: true })
-    const [{ data: profileRow, error: profileError }, { data: adminRow }] = await Promise.all([
-      supabase.from('customer_profiles').select('id,user_id,email,full_name,phone,address,city,state,postal_code,avatar_url').eq('user_id', current.id).maybeSingle(),
-      supabase.from('admin_users').select('user_id').eq('user_id', current.id).maybeSingle(),
-    ])
+    const { data: profileRow, error: profileError } = await supabase.from('customer_profiles').select('id,user_id,email,full_name,phone,address,city,state,postal_code,avatar_url').eq('user_id', current.id).maybeSingle()
     const { data: orderRows, error: orderError } = profileRow
       ? await supabase.from('orders').select('id,order_number,total,status,payment_status,payment_method,tracking_number,courier_partner,cod_confirmed_at,created_at,order_items(product_name,unit_price,size,color,quantity,line_total)').eq('customer_id', profileRow.id).order('created_at', { ascending: false })
       : { data: [], error: null }
@@ -79,7 +75,6 @@ export default function AccountPage() {
     const historyByOrder = new Map<string, OrderEvent[]>()
     for (const event of historyRows ?? []) historyByOrder.set(event.order_id, [...(historyByOrder.get(event.order_id) ?? []), event])
     setOrders(((orderRows ?? []) as unknown as Order[]).map((order) => ({ ...order, status_history: historyByOrder.get(order.id) ?? [] })))
-    setIsAdmin(Boolean(adminRow))
     setBusy(false)
   }
 
@@ -103,7 +98,7 @@ export default function AccountPage() {
       const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
         if (!alive) return
         if (session) { setBusy(true); window.setTimeout(() => { if (alive) void loadAccount() }, 0) }
-        else { setUser(null); setProfile(null); setOrders([]); setIsAdmin(false); setBusy(false) }
+        else { setUser(null); setProfile(null); setOrders([]); setBusy(false) }
       })
       unsubscribe = () => listener.subscription.unsubscribe()
     } catch (cause) {
@@ -295,7 +290,6 @@ export default function AccountPage() {
             <button className="verification-back" type="button" disabled={saving} onClick={() => { setForm({ full_name: profile?.full_name ?? '', phone: profile?.phone ?? '', address: profile?.address ?? '', city: profile?.city ?? '', state: profile?.state ?? '', postal_code: profile?.postal_code ?? '' }); setIsEditingProfile(false); setError(''); setMessage('') }}>Cancel</button>
           </div>}
         </form>
-        {isAdmin && <Link className="account-signout" href="/admin/products">Open admin panel →</Link>}
         <button className="account-signout" type="button" onClick={() => void signOut()}><LogOut size={15} /> Sign out</button>
       </section>
       <section className="account-orders">
