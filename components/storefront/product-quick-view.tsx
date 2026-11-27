@@ -5,6 +5,7 @@ import { X, ShoppingBag } from 'lucide-react'
 import type { Product } from '@/lib/store-products'
 import { formatPrice, getProductImages } from '@/lib/store-products'
 import { useCart } from '@/components/storefront/cart-store'
+import { getVariantStock } from '@/components/storefront/stock'
 
 const swatches: Record<string, string> = {
   oat:'#d8c9ad', ink:'#252722', cognac:'#9b6647', black:'#252722', cloud:'#faf9f4',
@@ -17,6 +18,8 @@ export default function ProductQuickView({ product, onClose }: { product: Produc
   const [size, setSize] = useState(product.sizes[0] ?? 'One size')
   const { add, openDrawer } = useCart()
   const images = getProductImages(product, color)
+  const variantStock = getVariantStock(product, size, color)
+  const canAddToBag = variantStock === null || variantStock > 0
 
   return <div className="quick-view-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
     <section className="quick-view-modal" role="dialog" aria-modal="true" aria-labelledby="quick-view-title">
@@ -42,7 +45,8 @@ export default function ProductQuickView({ product, onClose }: { product: Produc
           </div>
         </div>
 
-        <button className="button-dark full-width detail-add" type="button" onClick={() => { add(product, size, color); onClose(); openDrawer() }}>
+        {variantStock === 0 && <p className="detail-note" role="status">This variant is currently out of stock.</p>}
+        <button className="button-dark full-width detail-add" type="button" disabled={!canAddToBag} onClick={() => { add(product, size, color); onClose(); openDrawer() }}>
           <ShoppingBag size={15} /> Add to bag
         </button>
         <p className="detail-note">Free shipping over ₹3,000 · Cash on delivery available</p>
