@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { Minus, Plus, ShoppingBag, X } from 'lucide-react'
 import { cartKey, useCart } from '@/components/storefront/cart-store'
 import { formatPrice, getProductImages } from '@/lib/store-products'
+import { getVariantStock } from '@/components/storefront/stock'
 
 export default function CartDrawer() {
   const { items, count, subtotal, drawerOpen, closeDrawer, setQuantity, remove } = useCart()
@@ -52,8 +53,9 @@ export default function CartDrawer() {
                     <div className="quantity-control" aria-label={`Quantity for ${item.product.name}`}>
                       <button type="button" aria-label={`Decrease ${item.product.name} quantity`} onClick={() => setQuantity(cartKey(item), item.quantity - 1)}><Minus size={12} /></button>
                       <span>{item.quantity}</span>
-                      <button type="button" aria-label={`Increase ${item.product.name} quantity`} onClick={() => setQuantity(cartKey(item), item.quantity + 1)}><Plus size={12} /></button>
+                      <button type="button" aria-label={`Increase ${item.product.name} quantity`} disabled={getVariantStock(item.product, item.size, item.color) !== null && item.quantity >= Math.min(10, getVariantStock(item.product, item.size, item.color) ?? 0)} onClick={() => setQuantity(cartKey(item), item.quantity + 1)}><Plus size={12} /></button>
                     </div>
+                    {getVariantStock(item.product, item.size, item.color) === 0 && <small className="cell-sub" role="status">Out of stock — remove this item to continue</small>}
                     <button className="remove-link" type="button" onClick={() => remove(cartKey(item))}>Remove</button>
                   </div>
                   <span className="cart-line-price">{formatPrice(item.product.price * item.quantity)}</span>
