@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     const { data: profile } = await service.from('customer_profiles').select('id').eq('user_id', authData.user.id).maybeSingle()
     if (!profile) return NextResponse.json({ error: 'Customer profile not found.' }, { status: 404 })
     const { data: order, error: orderError } = await service.from('orders')
-      .select('id,order_number,status,payment_status,payment_method,razorpay_order_id,razorpay_payment_id,refund_id')
+      .select('id,order_number,status,payment_status,payment_method,razorpay_order_id,razorpay_payment_id,refund_id,total')
       .eq('id', orderId).eq('customer_id', profile.id).maybeSingle()
     if (orderError || !order) return NextResponse.json({ error: 'Order not found.' }, { status: 404 })
     if (order.status === 'cancelled') return NextResponse.json({ orderNumber: order.order_number, status: 'cancelled', paymentStatus: order.payment_status })
@@ -36,10 +36,24 @@ export async function POST(request: Request) {
     let refundStatus: string | null = null
     let paymentId = order.razorpay_payment_id
     if (order.payment_method === 'upi' && order.razorpay_order_id && order.payment_status !== 'paid') {
-      const payments = await razorpayRequest<{ items: Array<{ id: string; status: string }> }>(`orders/${order.razorpay_order_id}/payments`)
+      const payments = await razorpayRequest<{ items: Array<{ id: string; status: string; amount: number; currency: string }> }>(`orders/${order.razorpay_order_id}/payments`)
       const captured = payments.items?.find((payment) => payment.status === 'captured')
-      if (captured) paymentId = captured.id
-      else if (payments.items?.some((payment) => payment.status === 'authorized')) {
+      if (captured) {
+        if (captured.currency !== 'INR' || captured.amount !== Math.round(Number(order.total) * 100)) {
+          return NextResponse.json({ error: 'The captured payment does not match this order. Please contact support.' }, { status: 409 })
+        }
+        const { data: attempt } = await service.from('order_payment_attempts').select('id')
+          .eq('razorpay_order_id', order.razorpay_order_id).maybeSingle()
+        if (!attempt) return NextResponse.json({ error: 'Payment reference is missing. Please contact support.' }, { status: 409 })
+        const { error: confirmError } = await service.rpc('confirm_account_payment', {
+          p_user_id: authData.user.id, p_order_id: order.id, p_attempt_id: attempt.id,
+          p_session_id: order.razorpay_order_id, p_payment_intent_id: captured.id,
+        })
+        if (confirmError) throw confirmError
+        paymentId = captured.id
+        order.payment_status = 'paid'
+        order.razorpay_payment_id = captured.id
+      } else if (payments.items?.some((payment) => payment.status === 'authorized')) {
         return NextResponse.json({ error: 'Payment is authorised but not yet captured. Please contact support before cancelling.' }, { status: 409 })
       }
     }
