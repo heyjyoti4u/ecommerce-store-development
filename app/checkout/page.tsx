@@ -138,7 +138,7 @@ export default function CheckoutPage() {
           currency: 'INR',
           name: 'ORO',
           description: `Order ${result.orderNumber}`,
-          prefill: result.customer,
+          prefill: { name: result.customer.name, email: result.customer.email, contact: result.customer.phone },
           notes: { order_number: result.orderNumber },
           theme: { color: '#24382f' },
           modal: { ondismiss: () => setError('Payment window closed. Your order is still pending; you can retry online payment or choose COD.') },
