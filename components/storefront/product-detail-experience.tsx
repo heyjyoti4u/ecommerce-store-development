@@ -1,11 +1,11 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { ShoppingBag } from 'lucide-react'
 import type { Product } from '@/lib/store-products'
 import { formatPrice, getProductImages } from '@/lib/store-products'
 import { useCart } from '@/components/storefront/cart-store'
+import ProductCard from '@/components/storefront/product-card'
 
 const swatches: Record<string, string> = {
   oat: '#d8c9ad', ink: '#252722', cognac: '#9b6647', black: '#252722', cloud: '#faf9f4',
@@ -13,12 +13,11 @@ const swatches: Record<string, string> = {
   natural: '#d8c9ad', espresso: '#594438', stone: '#b9ad9b',
 }
 
-export default function ProductDetailExperience({ product }: { product: Product }) {
+export default function ProductDetailExperience({ product, recommendations }: { product: Product; recommendations: Product[] }) {
   const [color, setColor] = useState(product.colors[0] ?? '')
   const [size, setSize] = useState(product.sizes[0] ?? '')
   const [activeImage, setActiveImage] = useState(0)
-  const [added, setAdded] = useState(false)
-  const { add } = useCart()
+  const { add, openDrawer } = useCart()
   const images = getProductImages(product, color)
   const hasColors = product.colors.length > 0
   const hasSizes = product.sizes.length > 0
@@ -36,7 +35,8 @@ export default function ProductDetailExperience({ product }: { product: Product 
     setActiveImage(0)
   }
 
-  return <div className="product-detail-layout">
+  return <>
+  <div className="product-detail-layout">
     <div className="detail-gallery">
       <div className="product-detail-image"><img src={images[imageIndex] ?? product.image} alt={product.alt || product.name} /></div>
       {images.length > 1 && <div className="detail-thumbnails" role="group" aria-label="Product photos">
@@ -56,8 +56,19 @@ export default function ProductDetailExperience({ product }: { product: Product 
           {product.sizes.map((value) => <button key={value} className={`option-button ${size === value ? 'selected' : ''}`} type="button" aria-pressed={size === value} onClick={() => setSize(value)}>{value}</button>)}
         </div>
       </>}
-      <button className="button-dark full-width detail-add" type="button" disabled={(product.colors.length > 0 && !color) || (product.sizes.length > 0 && !size)} onClick={() => { add(product, size, color); setAdded(true); window.setTimeout(() => setAdded(false), 1800) }}><ShoppingBag size={15} /> {added ? 'Added to your bag' : 'Add to bag'}</button>
+      <button className="button-dark full-width detail-add" type="button" disabled={!canAddToBag} onClick={() => { add(product, size, color); openDrawer() }}><ShoppingBag size={15} /> Add to bag</button>
       <p className="detail-note">Free shipping on orders over ₹3,000 · Cash on delivery available</p>
-    </div><Link className="text-link" href="/shipping">Shipping & returns <span aria-hidden="true">↗</span></Link></section>
+    </div>
+    <section className="product-shipping-info" aria-label="Shipping and returns">
+      <h2>Shipping & returns</h2>
+      <p>Orders over ₹3,000 ship free. A ₹150 delivery fee applies to smaller orders. Eligible unworn items can be returned within 7 days of delivery.</p>
+      <a href="mailto:hello@oro.store">Questions? Contact us</a>
+    </section>
+    </section>
   </div>
+  {recommendations.length > 0 && <section className="product-recommendations" aria-labelledby="recommendations-title">
+    <div className="section-head"><div><span className="section-kicker">Keep looking</span><h2 className="section-title" id="recommendations-title">More things you might like.</h2></div></div>
+    <div className="product-grid">{recommendations.map((item) => <ProductCard key={item.id} product={item} />)}</div>
+  </section>}
+  </>
 }

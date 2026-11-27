@@ -2,10 +2,12 @@ import { createClient } from '@supabase/supabase-js'
 import type { Product } from '@/lib/store-products'
 
 function getServerSupabase() {
-  const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
-    ?? process.env.NEXT_PUBLIC_ECOMMERCE_STORE_SUPABASE_URL
-  const key = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
+  const url = process.env.ECOMMERCE_STORE_SUPABASE_URL ?? process.env.SUPABASE_URL
+    ?? process.env.NEXT_PUBLIC_ECOMMERCE_STORE_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.ECOMMERCE_STORE_SUPABASE_SECRET_KEY ?? process.env.ECOMMERCE_STORE_SUPABASE_SERVICE_ROLE_KEY
+    ?? process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
     ?? process.env.NEXT_PUBLIC_ECOMMERCE_STORE_SUPABASE_ANON_KEY
+    ?? process.env.NEXT_PUBLIC_ECOMMERCE_STORE_SUPABASE_PUBLISHABLE_KEY
     ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
     ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url || !key) throw new Error('Supabase catalog is not configured. Add the Supabase URL and anon/publishable key to Vercel environment variables.')

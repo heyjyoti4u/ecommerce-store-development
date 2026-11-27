@@ -17,7 +17,7 @@ export default function Storefront() {
   const [selectedColor, setSelectedColor] = useState('')
   const [homeColors, setHomeColors] = useState<Record<string, string>>({})
   const router = useRouter()
-  const { items: cart, count: itemCount, subtotal, add, setQuantity } = useCart()
+  const { items: cart, count: itemCount, subtotal, add, setQuantity, openDrawer } = useCart()
   const [cartOpen, setCartOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -49,6 +49,7 @@ export default function Storefront() {
   function addToCart(product: Product, size: string, color: string) {
     add(product, size, color)
     setSelected(null)
+    openDrawer()
     showNotice('Added to your bag')
   }
 

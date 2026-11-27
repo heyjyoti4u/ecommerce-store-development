@@ -15,8 +15,7 @@ const swatches: Record<string, string> = {
 export default function ProductQuickView({ product, onClose }: { product: Product; onClose: () => void }) {
   const [color, setColor] = useState(product.colors[0] ?? 'Natural')
   const [size, setSize] = useState(product.sizes[0] ?? 'One size')
-  const [added, setAdded] = useState(false)
-  const { add } = useCart()
+  const { add, openDrawer } = useCart()
   const images = getProductImages(product, color)
 
   return <div className="quick-view-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
@@ -43,10 +42,9 @@ export default function ProductQuickView({ product, onClose }: { product: Produc
           </div>
         </div>
 
-        <button className="button-dark full-width detail-add" type="button" onClick={() => { add(product, size, color); setAdded(true) }}>
-          <ShoppingBag size={15} /> {added ? 'Added to your bag' : 'Add to bag'}
+        <button className="button-dark full-width detail-add" type="button" onClick={() => { add(product, size, color); onClose(); openDrawer() }}>
+          <ShoppingBag size={15} /> Add to bag
         </button>
-        {added && <p className="quick-view-added" role="status">Added to your bag. You can keep shopping.</p>}
         <p className="detail-note">Free shipping over ₹3,000 · Cash on delivery available</p>
       </div>
     </section>
